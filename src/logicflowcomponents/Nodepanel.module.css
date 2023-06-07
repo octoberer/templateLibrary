@@ -1,0 +1,24 @@
+.itemwrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.node-item-icon {
+    width: 30px;
+    height: 30px;
+    background-size: cover;
+}
+.node-rect {
+    border: 1px solid black;
+}
+.node-task {
+    border: 3px solid rgb(116, 114, 114);
+}
+.node-possessControl {
+    border: 1px solid black;
+    transform: rotate(45deg);
+}
+.node-end {
+    background: url('../assets/background/end.png') no-repeat;
+    background-size: cover;
+}
