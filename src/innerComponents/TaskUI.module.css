@@ -1,0 +1,12 @@
+.wrapper {
+    background: white;
+    height: 100%;
+    border: 1px solid black;
+    padding: 10px;
+}
+:global(.ant-form-item.css-dev-only-do-not-override-k7429z) {
+    margin-bottom: 10px;
+}
+:global(.css-dev-only-do-not-override-k7429z.ant-form-item .ant-form-item-control-input){
+    min-height: initial;
+}

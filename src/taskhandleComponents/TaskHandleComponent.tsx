@@ -1,63 +1,35 @@
-import React, { Fragment } from 'react';
 import TwoparamsFouroperations from './twoparamsFouroperations';
 import OneparamsFouroperations from './OneparamsFouroperations';
-
+import styles from './TaskHandleComponent.module.css';
 export default function TaskHandleComponent({
     selectmethod,
-    inputparams,
-    outputparams,
+    inputparamNames,
+    outputparamNames,
+    getHandleData
 }: {
     selectmethod: any;
-    inputparams: string[];
-    outputparams: string[];
+    inputparamNames: string[];
+    outputparamNames: string[];
+    getHandleData: (data:any) => void
 }) {
-    const convertToSymbol = (selectmethod: any) => {
-        switch (selectmethod) {
-            case 'add':
-                return '➕';
-            case 'sub':
-                return '➖';
-            case 'multipy':
-                return '✖';
-            case 'divide':
-                return '➗';
-            case 'modular':
-                return '%';
-            case 'power':
-                return '^';
-            case 'extractAroot':
-                return '开根';
-            case 'Equalto':
-                return '==';
-            case 'outweight':
-                return '＞';
-            case 'less':
-                return '＜';
-            case 'atLeast':
-                return '≥';
-            case 'atMost':
-                return '≤';
-            case 'notEqualto':
-                return '≠';
-            default:
-                return '➕';
-        }
-    };
+    
     return (
-        <div style={{ marginBottom: '20px' }}>
+        <div className={styles.wrapper}>
             {['add', 'sub', 'multipy', 'divide', 'Equalto', 'outweight', 'less', 'atLeast', 'atMost', 'notEqualto'].indexOf(selectmethod) !=
                 -1 && (
                 <TwoparamsFouroperations
-                    inputparams={inputparams}
-                    outputparams={outputparams}
-                    operation={convertToSymbol(selectmethod)}
+                    getHandleData={getHandleData}
+                    inputparams={inputparamNames}
+                    outputparams={outputparamNames}
+                    selectmethod={selectmethod}
                 ></TwoparamsFouroperations>
             )}
             {['modular', 'power', 'extractAroot'].indexOf(selectmethod) != -1 && (
                 <OneparamsFouroperations
-                    inputparams={inputparams}
-                    outputparams={outputparams}
-                    operation={convertToSymbol(selectmethod)}
+                    getHandleData={getHandleData}
+                    inputparams={inputparamNames}
+                    outputparams={outputparamNames}
+                    selectmethod={selectmethod}
                 ></OneparamsFouroperations>
             )}
         </div>

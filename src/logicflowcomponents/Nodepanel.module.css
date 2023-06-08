@@ -8,8 +8,11 @@
     height: 30px;
     background-size: cover;
 }
-.node-rect {
+.node-start {
+    width: 40px;
+    height: 25px;
     border: 1px solid black;
+    border-radius: 10px;
 }
 .node-task {
     border: 3px solid rgb(116, 114, 114);

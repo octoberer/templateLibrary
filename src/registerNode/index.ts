@@ -1,5 +1,13 @@
+import getregisterEndobj from './registerEnd';
+import getregisterProcessControlWaitAllobj from './registerProcessControlwaitAll';
+import getregisterProcessControlWaitAnyobj from './registerProcessControlwaitAny';
+import getregisterStartobj from './registerStart';
+import getregisterTaskobj from './registerTask';
 
-
-import getregisterTaskobj from './registerTask'
-import getregisterProcessControlobj from './registerProcessControl'
-export { getregisterProcessControlobj, getregisterTaskobj }
+export {
+    getregisterEndobj,
+    getregisterStartobj,
+    getregisterProcessControlWaitAllobj,
+    getregisterProcessControlWaitAnyobj,
+    getregisterTaskobj,
+};

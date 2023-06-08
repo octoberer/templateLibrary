@@ -1,11 +1,12 @@
 import { Button, Form, Input, Select, Tag } from 'antd';
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import { basicMethods } from '../define';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import TaskHandleComponent from '../taskhandleComponents/TaskHandleComponent';
-import { currentBasicTask } from '../data';
 import LogicFlow from '@logicflow/core';
 import { Bus } from '../tools/Bus';
+import styles from './TaskUI.module.css';
+import { getBasicTaskId, getBasicTaskinstanceId, getTaskIOArg } from '../taskhandleComponents/toolfn';
 
 const formItemLayout = {
     labelCol: {
@@ -25,52 +26,81 @@ const formItemLayoutWithOutLabel = {
     },
 };
 export default function TaskUI({ loginflowInstance }: { loginflowInstance: LogicFlow }) {
-    const [selectmethod, setSelectmethod] = useState();
-    const [inputparams, setInputparams] = useState<string[]>([]);
-    const [outputparams, setOutputparams] = useState<string[]>([]);
+    const Formbox = useRef<any>(null);
+    const [selectmethod, setSelectmethod] = useState<any>('test');
+    const [inputparams, setInputparams] = useState<{ name: string; doc?: string }[]>([]);
+    const [outputparams, setOutputparams] = useState<{ name: string; doc?: string }[]>([]);
     const [editstatus, setEditstatus] = useState<'success' | 'processing' | 'error'>('processing');
     const [clickNode, setClickNode] = useState<any>(null);
-    const loginflowInstanceref=useRef(loginflowInstance)
+    const [HandleData, setHandleData] = useState<any>({});
+    const loginflowInstanceref = useRef(loginflowInstance);
     const onInputparamsChange = (event: InputEvent, index: number) => {
-        inputparams[index] = event.target?.value;
+        debugger;
+        if (!inputparams[index]) {
+            inputparams[index] = { name: '' };
+        }
+        inputparams[index].name = event.target?.value;
         setInputparams([...inputparams]);
     };
     const onOutputparamsChange = (event: InputEvent, index: number) => {
-        outputparams[index] = event.target?.value;
+        if (!outputparams[index]) {
+            outputparams[index] = { name: '' };
+        }
+        outputparams[index].name = event.target?.value;
         setOutputparams([...outputparams]);
     };
+    const removeItem = (type, index) => {
+        if (type == 'input') {
+            inputparams.splice(index, 1);
+            setInputparams([...inputparams]);
+        } else if (type == 'output') {
+            outputparams.splice(index, 1);
+            setOutputparams([...outputparams]);
+        }
+    };
+    useEffect(() => {
+        Formbox.current?.setFieldsValue({ input1: '', input2: '' });
+    }, [inputparams]);
+    useEffect(() => {
+        Formbox.current?.setFieldsValue({ output: '' });
+    }, [outputparams]);
+
     useEffect(() => {
         Bus.subscribe('ClickNodeDataUpdate', (data) => {
             setClickNode(data);
         });
-    });
+    }, []);
     const onFinish = () => {
         setEditstatus('success');
         const Taskobj = {
-            inputArgs: inputparams,
-            outputArgs: outputparams,
-            inputTask: null,
-            outputTask: null,
+            id: getBasicTaskId(selectmethod) + '',
+            instanceId: getBasicTaskinstanceId(selectmethod) + '',
+            args: HandleData,
+            inputArgs: inputparams.map((inputparam) => getTaskIOArg({ param: inputparam.name, doc: inputparam.doc })),
+            outputArgs: outputparams.map((outputparam) => getTaskIOArg({ param: outputparam.name, doc: '' })),
             handle: selectmethod,
         };
-        debugger
         loginflowInstanceref.current.setProperties(clickNode.id, Taskobj);
-        setTimeout(()=>{
-            console.log(clickNode)
-            console.log('getGraphData',loginflowInstanceref.current.getGraphData())
-        })
-        // supplementToBasicTask(Taskobj);
+        setTimeout(() => {
+            console.log(clickNode);
+            console.log('getGraphData', loginflowInstanceref.current.getGraphData());
+        });
     };
-    useEffect(()=>{
-        loginflowInstanceref.current=loginflowInstance
-    },[loginflowInstance])
+    const getHandleData = useCallback((data: any) => {
+        setHandleData(data);
+    }, []);
+    useEffect(() => {
+        loginflowInstanceref.current = loginflowInstance;
+    }, [loginflowInstance]);
 
     const onFinishFailed = () => {
         setEditstatus('error');
     };
+    const inputparamNames = useMemo(() => inputparams.map((item) => item.name), [inputparams]);
+    const outputparamNames = useMemo(() => outputparams.map((item) => item.name), [outputparams]);
     return (
-        <div style={{ background: 'white', height: '100%', border: '1px solid black', padding: '10px' }}>
-            <Form name="basic" style={{ maxWidth: 600 }} onFinish={onFinish} onFinishFailed={onFinishFailed} autoComplete="off">
+        <div className={styles.wrapper}>
+            <Form name="basic" style={{ maxWidth: 600 }} onFinish={onFinish} onFinishFailed={onFinishFailed} ref={Formbox}>
                 <Form.List
                     name="inputArgs"
                     rules={[
@@ -110,7 +140,14 @@ export default function TaskUI({ loginflowInstance }: { loginflowInstance: Logic
                                             onChange={(e) => onInputparamsChange(e, index)}
                                         />
                                     </Form.Item>
-                                    <MinusCircleOutlined className="dynamic-delete-button" onClick={() => remove(field.name)} />
+                                    <MinusCircleOutlined
+                                        className="dynamic-delete-button"
+                                        onClick={() => {
+                                            debugger;
+                                            remove(field.name);
+                                            removeItem('input', index);
+                                        }}
+                                    />
                                 </Form.Item>
                             ))}
                             <Form.Item>
@@ -162,7 +199,13 @@ export default function TaskUI({ loginflowInstance }: { loginflowInstance: Logic
                                         />
                                     </Form.Item>
                                     {fields.length > 1 ? (
-                                        <MinusCircleOutlined className="dynamic-delete-button" onClick={() => remove(field.name)} />
+                                        <MinusCircleOutlined
+                                            className="dynamic-delete-button"
+                                            onClick={() => {
+                                                remove(field.name);
+                                                removeItem('output', index);
+                                            }}
+                                        />
                                     ) : null}
                                 </Form.Item>
                             ))}
@@ -175,7 +218,7 @@ export default function TaskUI({ loginflowInstance }: { loginflowInstance: Logic
                         </>
                     )}
                 </Form.List>
-                <Form.Item label="处理方法" name="handlemethod" rules={[{ required: true, message: '请选择对应的处理方法' }]}>
+                <Form.Item label="处理方法" name={'choosehandleMethod'} rules={[{ required: true, message: '请选择对应的处理方法' }]}>
                     <Select
                         onSelect={(e) => {
                             setSelectmethod(e);
@@ -188,8 +231,9 @@ export default function TaskUI({ loginflowInstance }: { loginflowInstance: Logic
                 </Form.Item>
                 <TaskHandleComponent
                     selectmethod={selectmethod}
-                    inputparams={inputparams}
-                    outputparams={outputparams}
+                    inputparamNames={inputparamNames}
+                    outputparamNames={outputparamNames}
+                    getHandleData={getHandleData}
                 ></TaskHandleComponent>
                 <Form.Item>
                     <div style={{ display: 'flex', justifyContent: 'space-around' }}>

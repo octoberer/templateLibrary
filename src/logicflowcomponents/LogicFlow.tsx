@@ -1,10 +1,16 @@
 import LogicFlow from '@logicflow/core';
 import '@logicflow/core/dist/style/index.css';
 import { useEffect, useRef } from 'react';
-import { getregisterProcessControlobj, getregisterTaskobj } from '../registerNode';
 import { Menu } from '@logicflow/extension';
 import '@logicflow/extension/lib/style/index.css';
 import { Bus } from '../tools/Bus';
+import {
+    getregisterEndobj,
+    getregisterProcessControlWaitAllobj,
+    getregisterProcessControlWaitAnyobj,
+    getregisterStartobj,
+    getregisterTaskobj,
+} from '../registerNode';
 
 interface LogicFlowCanvaspropsType {
     getLFinstanceobj: (obj: LogicFlow) => void;
@@ -16,7 +22,7 @@ export default function LogicFlowCanvas({ getLFinstanceobj, getLFcurrentClickNod
     const addLfEvent = (LogicFlowobj: LogicFlow) => {
         LogicFlowobj.on('node:click', ({ data }) => {
             getLFcurrentClickNode(data);
-            Bus.emit('ClickNodeDataUpdate',data)
+            Bus.emit('ClickNodeDataUpdate', data);
         });
         LogicFlowobj.on('edge:click', ({ data }) => {
             console.log('edge:click', data);
@@ -41,8 +47,26 @@ export default function LogicFlowCanvas({ getLFinstanceobj, getLFcurrentClickNod
             width: document.documentElement.clientWidth,
             height: document.documentElement.clientWidth - 128,
         });
-        lfinstance.register(getregisterProcessControlobj(lfinstance));
+        lfinstance.register(getregisterProcessControlWaitAnyobj(lfinstance));
+        lfinstance.register(getregisterProcessControlWaitAllobj(lfinstance));
         lfinstance.register(getregisterTaskobj(lfinstance));
+        lfinstance.register(getregisterStartobj());
+        lfinstance.register(getregisterEndobj());
+        lfinstance.setTheme({
+            text: {
+                color: 'red',
+                fontSize: 24,
+                background: {
+                    fill: 'transparent',
+                },
+            },
+            nodeText: {
+                color: '#000000',
+                overflowMode: 'default',
+                lineHeight: 1.2,
+                fontSize: 16,
+            },
+        });
         lfinstance.render({
             nodes: [
                 {
@@ -53,36 +77,7 @@ export default function LogicFlowCanvas({ getLFinstanceobj, getLFcurrentClickNod
                 },
             ],
         });
-        lfinstance.setTheme({
-            circle: {
-                stroke: '#000000',
-                strokeWidth: 1,
-                outlineColor: '#88f',
-            },
-            rect: {
-                outlineColor: '#88f',
-                strokeWidth: 1,
-            },
-            polygon: {
-                strokeWidth: 1,
-            },
-            polyline: {
-                stroke: '#000000',
-                hoverStroke: '#000000',
-                selectedStroke: '#000000',
-                outlineColor: '#88f',
-                strokeWidth: 1,
-            },
-            nodeText: {
-                color: '#000000',
-            },
-            edgeText: {
-                color: '#000000',
-                background: {
-                    fill: '#f7f9ff',
-                },
-            },
-        });
+        // 给父祖件传实例值
         getLFinstanceobj(lfinstance);
         // 注册监听事件
         addLfEvent(lfinstance);

@@ -30,7 +30,7 @@ export default function App() {
                 <div className="absolute top-0 right-12 z-1">
                     <Control />
                 </div>
-                <div className="flex justify-around flex-col items-center  absolute top-0 left-12 w-20 h-[500px] px-3 bg-white shadow-2xl text-center z-10">
+                <div className="flex justify-evenly flex-col items-center  absolute top-0 left-12 w-20 h-[500px] px-3 bg-white shadow-2xl text-center z-10">
                     <NodePanel LFinstanceobj={LFinstanceobj} nodeList={nodeList}></NodePanel>
                 </div>
             </div>

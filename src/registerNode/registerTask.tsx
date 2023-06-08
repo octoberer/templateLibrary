@@ -33,8 +33,8 @@ export default function getregisterTaskobj(lf: LogicFlow) {
         }
         initNodeData(data: any) {
             super.initNodeData(data);
-            this.width = 500;
-            this.height = 300;
+            this.width = 400;
+            this.height = 320;
             this.text.draggable = false;
             this.text.editable = false;
         }

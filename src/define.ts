@@ -72,61 +72,81 @@ export const basicMethods = [
         name: 'notEqualto',
     },
 ];
-export interface TaskIOArgs {
+//============基础任务相关
+// 》》》定义该任务具体的操作输入输出，多个输入对应多个输出
+interface handleArg {
+    label: string; //参数显示在ui上面的名称
+    name: string; //参数名称，实际代码解析时候的名称
+    type: string; //参数数据类型
+    doc: string; //参数文档，这里就是一句话就行‘
+    uiComponent: string; //显示参数配置组件的名称，如按钮，输入框，开关等对应的英文
+    value: string | undefined; //如果是阈值，或开n次方的n在这定义；如是输入参数，此值为undefined
+    isFixedValue: boolean; //说明是否在输入参数中选择而出
+    editable: boolean; //定义存储后，可否修改
+}
+// 》》》定义该任务的输入输出的参数的具体信息
+interface TaskIOArg {
     label: string; //参数显示    在ui上面的名称
     name: string; //参数名称，实际代码解析时候的名称
     type: string; //参数类型，用于ui显示和判断参数是否正确
     doc: string; //参数文档，这里就是一句话就行
 }
-export interface componentArgs {
-    label: string; //参数显示在ui上面的名称
-    name: string; //参数名称，实际代码解析时候的名称
-    type: string; //参数类型
-    doc: string; //参数文档，这里就是一句话就行
-    uiComponent: string; //显示参数配置组件的名称，如按钮，输入框，开关等对应的英文
-    uiArgs: string; //ui参数的一些配置，如长宽，颜色，圆角等,json字符串
-    value: string; //参数的值，json字符串
-    allowEdit: boolean; //如果为true，则显示在最外层，如果为false，则不显示
-}
-export interface TaskBindArgs {
-    [paramsName: string]: TaskIOArgs;
-}
-export interface Task {
-    [templateinstanceIdOrTaskinstanceId: string]: basicTaskDefine | template | processControlDefine;
-}
-export interface IdBind {
-    [instanceId: string]: string;
+// 》》》定义以参数名字为键的所有输入参数/输出参数
+interface TaskBindArgs {
+    [paramsName: string]: TaskIOArg;
 }
 export interface basicTaskDefine {
     id: string;
     instanceId: string; //运用改任务计算方式的一个
+    outputhandlArg: handleArg;
+    inputhandlArg: handleArg[];
     inputArgs: TaskBindArgs;
     outputArgs: TaskBindArgs;
-    inputTask: Task;
-    outputTask: Task;
+    inputTask: basicTaskDefine | processControlDefine | undefined;
+    outputTask: basicTaskDefine | multipleTaskDefine | undefined;
+    handleType: 'basicTask';
     handle: string; //输入、参数作为handle的输入，输出会赋值给output所有的输入,如果是componentDefine的id，则调用对应处理器，如果是基础组件如add，则使用基础运算
+}
+
+//============模板相关
+interface EditHandlArgsdefine {
+    [basicTaskDefineInstanceid: string]: handleArg;
+}
+export interface templateComponentArgDefine {
+    label: string; //主题名字
+    name: string; //主题名称，实际代码解析时候的名称
+    editHandlArgs: EditHandlArgsdefine;
+}
+// multipleTask的键是它自身每个basictask的instanceid组成，其对应的值是它的输入或输出任务；这样是为了避免模板内部有多个输入输出，无法对应上的问题
+export interface multipleTaskDefine {
+    [BasicTaskinstanceId: string]: basicTaskDefine | template;
+}
+export interface IdBind {
+    [instanceId: string]: string;
 }
 export interface template {
     id: string; //当前解析器模板的唯一id
     instanceId: string; //当前解析器唯一id-+
     doc: string; //文档markdown格式，到时候用一个markdown解析器来显示
     briefName: string;
-    args: componentArgs[]; //参数数组
+    componentArg: templateComponentArgDefine; //模板组件的配置参数
     inputArgs: TaskBindArgs;
     outputArgs: TaskBindArgs;
-    inputTask: Task;
-    outputTask: Task;
+    inputTask: multipleTaskDefine | undefined;
+    outputTask: multipleTaskDefine | undefined;
     handOutputIdBindOutputId: IdBind;
     statusId: string; //前端通过状态id查找对应的状态卡片，id->ui，需要手动编写各种组建的状态卡片，这个需求应该挺少，一般顶层组件可能需要
     status: string; //状态卡片的参数，从输入输出和配置项拿，会不断地传给子节点，去丰富状态，json字符串，如果是业务系统中非配置页面，则只展示状态卡片
-    handle: Task; //输入、参数作为handle的输入，输出会赋值给output所有的输入,如果是componentDefine的id，则调用对应处理器，如果是基础组件如add，则使用基础运算
+    handleType: 'template';
+    handle: basicTaskDefine | multipleTaskDefine; //输入、参数作为handle的输入，输出会赋值给output所有的输入,如果是componentDefine的id，则调用对应处理器，如果是基础组件如add，则使用基础运算
 }
 export interface processControlDefine {
     id: string;
-    instanceId: string; //运用改任务计算方式的一个
+    instanceId: string;
     inputArgs: TaskBindArgs;
     outputArgs: TaskBindArgs;
-    inputTask: Task;
-    outputTask: Task;
-    handle: 'waitany' | 'wait all';
+    inputTask: multipleTaskDefine;
+    outputTask: multipleTaskDefine | basicTaskDefine;
+    handle: 'waitany' | 'waitAll';
+    handleType: 'processControl';
 }
