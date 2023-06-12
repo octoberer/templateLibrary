@@ -6,7 +6,7 @@ import TaskHandleComponent from '../taskhandleComponents/TaskHandleComponent';
 import LogicFlow from '@logicflow/core';
 import { Bus } from '../tools/Bus';
 import styles from './TaskUI.module.css';
-import { getBasicTaskId, getBasicTaskinstanceId, getTaskIOArg } from '../taskhandleComponents/toolfn';
+import { getBasicTaskId, getTaskinstanceId, getTaskIOArg } from '../tools/genTypeObj';
 
 const formItemLayout = {
     labelCol: {
@@ -32,10 +32,9 @@ export default function TaskUI({ loginflowInstance }: { loginflowInstance: Logic
     const [outputparams, setOutputparams] = useState<{ name: string; doc?: string }[]>([]);
     const [editstatus, setEditstatus] = useState<'success' | 'processing' | 'error'>('processing');
     const [clickNode, setClickNode] = useState<any>(null);
-    const [HandleData, setHandleData] = useState<any>({});
+    const [HandleData, setHandleData] = useState<{ output: any; input: any[] }>({ output: {}, input: [] });
     const loginflowInstanceref = useRef(loginflowInstance);
     const onInputparamsChange = (event: InputEvent, index: number) => {
-        debugger;
         if (!inputparams[index]) {
             inputparams[index] = { name: '' };
         }
@@ -74,11 +73,13 @@ export default function TaskUI({ loginflowInstance }: { loginflowInstance: Logic
         setEditstatus('success');
         const Taskobj = {
             id: getBasicTaskId(selectmethod) + '',
-            instanceId: getBasicTaskinstanceId(selectmethod) + '',
-            args: HandleData,
+            instanceId: getTaskinstanceId(selectmethod) + '',
+            outputhandlArg: HandleData.output,
+            inputhandlArg: HandleData.input,
             inputArgs: inputparams.map((inputparam) => getTaskIOArg({ param: inputparam.name, doc: inputparam.doc })),
             outputArgs: outputparams.map((outputparam) => getTaskIOArg({ param: outputparam.name, doc: '' })),
             handle: selectmethod,
+            handleType: 'basicTask',
         };
         loginflowInstanceref.current.setProperties(clickNode.id, Taskobj);
         setTimeout(() => {

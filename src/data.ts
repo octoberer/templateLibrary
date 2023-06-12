@@ -1,14 +1,17 @@
-import { basicTaskDefine } from "./define";
+import { basicTaskDefine } from './define';
 
-export const currentBasicTask:basicTaskDefine={
-    id: "",
-    instanceId: "",
-    inputArgs: {},
-    outputArgs: {},
-    inputTask: {},
-    outputTask: {},
-    handle: ""
+interface ComponentType {
+    nodeId: string;
+    ComponentType: 'processControlWaitAny' | 'processControlWaitAll';
+    properties: { [key: string]: any } | undefined;
 }
-export const supplementToBasicTask=()=>{
-    
-}
+
+export let currentChoseComponent: ComponentType = {
+    nodeId: '',
+    ComponentType: 'processControlWaitAny',
+    properties: undefined,
+};
+export const allProcessComponent: { [key: string]: ComponentType } = {};
+
+
+

@@ -1,6 +1,7 @@
-import TwoparamsFouroperations from './twoparamsFouroperations';
-import OneparamsFouroperations from './OneparamsFouroperations';
+import TwoparamsFouroperations from './Operation_twoparams';
 import styles from './TaskHandleComponent.module.css';
+import OneparamsOperations from './Operation_Oneparams';
+import MultipleParamsOperation from './Operation_multipleParams';
 export default function TaskHandleComponent({
     selectmethod,
     inputparamNames,
@@ -25,12 +26,20 @@ export default function TaskHandleComponent({
                 ></TwoparamsFouroperations>
             )}
             {['modular', 'power', 'extractAroot'].indexOf(selectmethod) != -1 && (
-                <OneparamsFouroperations
+                <OneparamsOperations
                     getHandleData={getHandleData}
                     inputparams={inputparamNames}
                     outputparams={outputparamNames}
                     selectmethod={selectmethod}
-                ></OneparamsFouroperations>
+                ></OneparamsOperations>
+            )}
+            {['median', 'min', 'max','Averaging','sum'].indexOf(selectmethod) != -1 && (
+                <MultipleParamsOperation
+                    getHandleData={getHandleData}
+                    inputparams={inputparamNames}
+                    outputparams={outputparamNames}
+                    selectmethod={selectmethod}
+                ></MultipleParamsOperation>
             )}
         </div>
     );

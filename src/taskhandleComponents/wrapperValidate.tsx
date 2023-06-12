@@ -1,9 +1,8 @@
 import { Form } from 'antd';
-import React from 'react';
 
-export default function WrapperValidate({ name, children }) {
+export default function WrapperValidate({ name, children, width }: { name: string; children: any; width?: any }) {
     return (
-        <Form.Item style={{width:'30%'}} name={name} rules={[{ required: true, message: '请补充该项' }]}>
+        <Form.Item style={width ? { width } : { width: '30%' }} name={name} rules={[{ required: true, message: '请补充该项' }]}>
             {children}
         </Form.Item>
     );

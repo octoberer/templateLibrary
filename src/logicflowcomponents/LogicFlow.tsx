@@ -1,7 +1,7 @@
 import LogicFlow from '@logicflow/core';
 import '@logicflow/core/dist/style/index.css';
 import { useEffect, useRef } from 'react';
-import { Menu } from '@logicflow/extension';
+import { Control, DndPanel, Group, Menu, MiniMap, SelectionSelect } from '@logicflow/extension';
 import '@logicflow/extension/lib/style/index.css';
 import { Bus } from '../tools/Bus';
 import {
@@ -11,17 +11,17 @@ import {
     getregisterStartobj,
     getregisterTaskobj,
 } from '../registerNode';
+import { allProcessComponent, currentChoseComponent } from '../data';
+import { getProcessControlTaskId, getTaskinstanceId } from '../tools/genTypeObj';
 
 interface LogicFlowCanvaspropsType {
     getLFinstanceobj: (obj: LogicFlow) => void;
-    getLFcurrentClickNode: (currentClickNode: any) => void;
 }
 
-export default function LogicFlowCanvas({ getLFinstanceobj, getLFcurrentClickNode }: LogicFlowCanvaspropsType) {
+export default function LogicFlowCanvas({ getLFinstanceobj }: LogicFlowCanvaspropsType) {
     const LogicFlowBox = useRef<HTMLDivElement | null>(null);
     const addLfEvent = (LogicFlowobj: LogicFlow) => {
         LogicFlowobj.on('node:click', ({ data }) => {
-            getLFcurrentClickNode(data);
             Bus.emit('ClickNodeDataUpdate', data);
         });
         LogicFlowobj.on('edge:click', ({ data }) => {
@@ -34,7 +34,22 @@ export default function LogicFlowCanvas({ getLFinstanceobj, getLFcurrentClickNod
             console.log('edge:add', data);
         });
         LogicFlowobj.on('node:mousemove', ({ data }) => {
+            if (data.type != 'processControlWaitAny' && data.type != 'processControlWaitAll') {
+                return;
+            }
             console.log('node:mousemove');
+            if (!allProcessComponent[data.id]) {
+                currentChoseComponent.nodeId = data.id;
+                currentChoseComponent.ComponentType = data.type;
+                currentChoseComponent.properties = {
+                    id: getProcessControlTaskId(data.type),
+                    instanceId: getTaskinstanceId(data.type) + '',
+                    handleType: 'processControl',
+                    handle: data.type,
+                };
+                allProcessComponent[data.id] = currentChoseComponent;
+                LogicFlowobj.setProperties(data.id, currentChoseComponent.properties);
+            }
         });
         LogicFlowobj.on('blank:click', () => {});
         LogicFlowobj.on('connection:not-allowed', (data) => {});
@@ -42,10 +57,23 @@ export default function LogicFlowCanvas({ getLFinstanceobj, getLFcurrentClickNod
     useEffect(() => {
         let lfinstance = new LogicFlow({
             container: LogicFlowBox.current || document.body,
-            plugins: [Menu],
+            plugins: [DndPanel, SelectionSelect, Control, MiniMap,Menu, Group],
             grid: true,
             width: document.documentElement.clientWidth,
             height: document.documentElement.clientWidth - 128,
+        });
+        lfinstance.extension.control.addItem({
+            iconClass: 'custom-minimap',
+            title: '',
+            text: '导航',
+            onMouseEnter: (lf:LogicFlow, ev: { x: number; y: number; }) => {
+                const position = lf.getPointByClient(ev.x, ev.y);
+                lf.extension.miniMap.show(position.domOverlayPosition.x - 120, position.domOverlayPosition.y + 35);
+            },
+            onClick: (lf:LogicFlow, ev: { x: number; y: number; }) => {
+                const position = lf.getPointByClient(ev.x, ev.y);
+                lf.extension.miniMap.show(position.domOverlayPosition.x - 120, position.domOverlayPosition.y + 35);
+            },
         });
         lfinstance.register(getregisterProcessControlWaitAnyobj(lfinstance));
         lfinstance.register(getregisterProcessControlWaitAllobj(lfinstance));
@@ -70,9 +98,21 @@ export default function LogicFlowCanvas({ getLFinstanceobj, getLFcurrentClickNod
         lfinstance.render({
             nodes: [
                 {
+                    type: 'group',
+                    x: 400,
+                    y: 400,
+                    children: ['rect_2'],
+                },
+                {
+                    id: 'rect_2',
                     type: 'task',
-                    x: 500,
-                    y: 300,
+                    x: 400,
+                    y: 400,
+                    properties: {},
+                },
+                {
+                    id: 'rect_3',
+                    type: 'task',
                     properties: {},
                 },
             ],

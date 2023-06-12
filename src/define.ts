@@ -32,6 +32,10 @@ export const basicMethods = [
         name: 'extractAroot',
     },
     {
+        label: '求和',
+        name: 'sum',
+    },
+    {
         label: '求平均数',
         name: 'Averaging',
     },
@@ -102,8 +106,8 @@ export interface basicTaskDefine {
     inputhandlArg: handleArg[];
     inputArgs: TaskBindArgs;
     outputArgs: TaskBindArgs;
-    inputTask: basicTaskDefine | processControlDefine | undefined;
-    outputTask: basicTaskDefine | multipleTaskDefine | undefined;
+    inputTask: basicTaskDefine | processControlDefine | undefined|'start';
+    outputTask: basicTaskDefine | multipleTaskDefine | undefined|'end';
     handleType: 'basicTask';
     handle: string; //输入、参数作为handle的输入，输出会赋值给output所有的输入,如果是componentDefine的id，则调用对应处理器，如果是基础组件如add，则使用基础运算
 }
