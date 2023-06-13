@@ -33,7 +33,7 @@ export default function TwoparamsFouroperations({ inputparams, outputparams, sel
     }, [output, input1, input2]);
     return (
         <Fragment>
-            <WrapperValidate name={'output'}>
+            <WrapperValidate name={'Twoparamsoutput'}>
                 <Select value={output} onChange={setOutput}>
                     {outputparams.map((item) => (
                         <Select.Option value={item}>{item}</Select.Option>
@@ -41,7 +41,7 @@ export default function TwoparamsFouroperations({ inputparams, outputparams, sel
                 </Select>
             </WrapperValidate>
             <div className="text-4xl">=</div>
-            <WrapperValidate name={'input1'}>
+            <WrapperValidate name={'Twoparamsinput1'}>
                 <Select onSelect={setInput1}>
                     {inputparams.map((item) => (
                         <Select.Option value={item}>{item}</Select.Option>
@@ -49,7 +49,7 @@ export default function TwoparamsFouroperations({ inputparams, outputparams, sel
                 </Select>
             </WrapperValidate>
             <div className="text-2xl  mx-1">{convertToSymbol(selectmethod)}</div>
-            <WrapperValidate name={'input2'}>
+            <WrapperValidate name={'Twoparamsinput2'}>
                 <AutoComplete
                     options={options}
                     placeholder="参数"

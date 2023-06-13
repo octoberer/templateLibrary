@@ -1,17 +1,26 @@
 type listType = {
-    [key: string]: (index: number) => void;
+    [key: string]: any;
 };
 interface BusType {
     list: listType;
-    subscribe: (fnName: string, callback: (index: number) => void) => void;
+    subscribe: (fnName: string, callback: (param: any) => void) => void;
     emit: (fnName: string, index: number) => void;
 }
 export const Bus: BusType = {
     list: {},
     subscribe(fnName: string, callback: (index: number) => void) {
-        this.list[fnName] = callback;
+        if (this.list[fnName]) {
+            this.list[fnName].push(callback);
+        }
+        else{
+            this.list[fnName]=[callback]
+        }
     },
-    emit(fnName: string, index: number) {
-        this.list[fnName] && this.list[fnName].call(null,index);
+    emit(fnName: string, param: any) {
+        if (Array.isArray(this.list[fnName])) {
+            this.list[fnName].forEach((fn: any) => {
+                fn.call(null, param);
+            });
+        }
     },
 };

@@ -31,7 +31,7 @@ export default function TaskUI({ loginflowInstance }: { loginflowInstance: Logic
     const [inputparams, setInputparams] = useState<{ name: string; doc?: string }[]>([]);
     const [outputparams, setOutputparams] = useState<{ name: string; doc?: string }[]>([]);
     const [editstatus, setEditstatus] = useState<'success' | 'processing' | 'error'>('processing');
-    const [clickNode, setClickNode] = useState<any>(null);
+    const clickNode = useRef<any>(undefined);
     const [HandleData, setHandleData] = useState<{ output: any; input: any[] }>({ output: {}, input: [] });
     const loginflowInstanceref = useRef(loginflowInstance);
     const onInputparamsChange = (event: InputEvent, index: number) => {
@@ -65,10 +65,17 @@ export default function TaskUI({ loginflowInstance }: { loginflowInstance: Logic
     }, [outputparams]);
 
     useEffect(() => {
-        Bus.subscribe('ClickNodeDataUpdate', (data) => {
-            setClickNode(data);
-        });
+        const myfn = (data: any) => {
+            // debugger;
+            // console.log('clickNodedata', data);
+            clickNode.current = data;
+        };
+        Bus.subscribe('ClickNodeDataUpdate', myfn);
     }, []);
+    useEffect(() => {
+        loginflowInstanceref.current = loginflowInstance;
+    }, [loginflowInstance]);
+
     const onFinish = () => {
         setEditstatus('success');
         const Taskobj = {
@@ -81,24 +88,16 @@ export default function TaskUI({ loginflowInstance }: { loginflowInstance: Logic
             handle: selectmethod,
             handleType: 'basicTask',
         };
-        loginflowInstanceref.current.setProperties(clickNode.id, Taskobj);
-        setTimeout(() => {
-            console.log(clickNode);
-            console.log('getGraphData', loginflowInstanceref.current.getGraphData());
-        });
+        loginflowInstanceref.current.setProperties(clickNode.current.id, Taskobj);
     };
-    const getHandleData = useCallback((data: any) => {
-        setHandleData(data);
-    }, []);
-    useEffect(() => {
-        loginflowInstanceref.current = loginflowInstance;
-    }, [loginflowInstance]);
-
     const onFinishFailed = () => {
         setEditstatus('error');
     };
     const inputparamNames = useMemo(() => inputparams.map((item) => item.name), [inputparams]);
     const outputparamNames = useMemo(() => outputparams.map((item) => item.name), [outputparams]);
+    const getHandleData = useCallback((data: any) => {
+        setHandleData(data);
+    }, []);
     return (
         <div className={styles.wrapper}>
             <Form name="basic" style={{ maxWidth: 600 }} onFinish={onFinish} onFinishFailed={onFinishFailed} ref={Formbox}>
@@ -144,7 +143,6 @@ export default function TaskUI({ loginflowInstance }: { loginflowInstance: Logic
                                     <MinusCircleOutlined
                                         className="dynamic-delete-button"
                                         onClick={() => {
-                                            debugger;
                                             remove(field.name);
                                             removeItem('input', index);
                                         }}
@@ -226,7 +224,9 @@ export default function TaskUI({ loginflowInstance }: { loginflowInstance: Logic
                         }}
                     >
                         {basicMethods.map((item) => (
-                            <Select.Option value={item.name}>{item.label}</Select.Option>
+                            <Select.Option value={item.name} key={item.label}>
+                                {item.label}
+                            </Select.Option>
                         ))}
                     </Select>
                 </Form.Item>
@@ -236,7 +236,7 @@ export default function TaskUI({ loginflowInstance }: { loginflowInstance: Logic
                     outputparamNames={outputparamNames}
                     getHandleData={getHandleData}
                 ></TaskHandleComponent>
-                <Form.Item>
+                <Form.Item name="submit">
                     <div style={{ display: 'flex', justifyContent: 'space-around' }}>
                         <Tag color={editstatus}>{editstatus}</Tag>
                         <Button htmlType="submit">提交</Button>

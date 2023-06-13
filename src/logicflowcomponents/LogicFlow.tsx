@@ -10,6 +10,8 @@ import {
     getregisterProcessControlWaitAnyobj,
     getregisterStartobj,
     getregisterTaskobj,
+    getregisterTemplateGroupObj,
+    getregisterTemplateObj,
 } from '../registerNode';
 import { allProcessComponent, currentChoseComponent } from '../data';
 import { getProcessControlTaskId, getTaskinstanceId } from '../tools/genTypeObj';
@@ -53,33 +55,41 @@ export default function LogicFlowCanvas({ getLFinstanceobj }: LogicFlowCanvaspro
         });
         LogicFlowobj.on('blank:click', () => {});
         LogicFlowobj.on('connection:not-allowed', (data) => {});
+        LogicFlowobj.on('selection:selected', (data) => {
+            LogicFlowobj.extension.selectionSelect.closeSelectionSelect();
+            Bus.emit('selectNodeDataUpdate', data);
+        });
     };
     useEffect(() => {
         let lfinstance = new LogicFlow({
             container: LogicFlowBox.current || document.body,
-            plugins: [DndPanel, SelectionSelect, Control, MiniMap,Menu, Group],
+            plugins: [DndPanel, SelectionSelect, Control, MiniMap, Menu, Group],
             grid: true,
             width: document.documentElement.clientWidth,
             height: document.documentElement.clientWidth - 128,
+            multipleSelectKey: 'meta',
         });
         lfinstance.extension.control.addItem({
             iconClass: 'custom-minimap',
             title: '',
             text: '导航',
-            onMouseEnter: (lf:LogicFlow, ev: { x: number; y: number; }) => {
+            onMouseEnter: (lf: LogicFlow, ev: { x: number; y: number }) => {
                 const position = lf.getPointByClient(ev.x, ev.y);
                 lf.extension.miniMap.show(position.domOverlayPosition.x - 120, position.domOverlayPosition.y + 35);
             },
-            onClick: (lf:LogicFlow, ev: { x: number; y: number; }) => {
+            onClick: (lf: LogicFlow, ev: { x: number; y: number }) => {
                 const position = lf.getPointByClient(ev.x, ev.y);
                 lf.extension.miniMap.show(position.domOverlayPosition.x - 120, position.domOverlayPosition.y + 35);
             },
         });
+        lfinstance.extension.selectionSelect.setSelectionSense(true, false);
         lfinstance.register(getregisterProcessControlWaitAnyobj(lfinstance));
         lfinstance.register(getregisterProcessControlWaitAllobj(lfinstance));
         lfinstance.register(getregisterTaskobj(lfinstance));
         lfinstance.register(getregisterStartobj());
         lfinstance.register(getregisterEndobj());
+        lfinstance.register(getregisterTemplateObj(lfinstance));
+        lfinstance.register(getregisterTemplateGroupObj(lfinstance));
         lfinstance.setTheme({
             text: {
                 color: 'red',
@@ -96,26 +106,13 @@ export default function LogicFlowCanvas({ getLFinstanceobj }: LogicFlowCanvaspro
             },
         });
         lfinstance.render({
-            nodes: [
-                {
-                    type: 'group',
-                    x: 400,
-                    y: 400,
-                    children: ['rect_2'],
-                },
-                {
-                    id: 'rect_2',
-                    type: 'task',
-                    x: 400,
-                    y: 400,
-                    properties: {},
-                },
-                {
-                    id: 'rect_3',
-                    type: 'task',
-                    properties: {},
-                },
-            ],
+            // nodes: [
+            //     {
+            //         type: 'start',
+            //         x: 800,
+            //         y: 100,
+            //     },
+            // ],
         });
         // 给父祖件传实例值
         getLFinstanceobj(lfinstance);

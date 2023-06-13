@@ -25,7 +25,7 @@ export default function OneparamsOperations({ inputparams, outputparams, selectm
     }, [output, input1, input2]);
     return (
         <>
-            <WrapperValidate name={'output'}>
+            <WrapperValidate name={'Oneparamsoutput'}>
                 <Select value={output} onChange={setOutput}>
                     {outputparams.map((item) => (
                         <Select.Option value={item}>{item}</Select.Option>
@@ -33,7 +33,7 @@ export default function OneparamsOperations({ inputparams, outputparams, selectm
                 </Select>
             </WrapperValidate>
             <div className="text-4xl">=</div>
-            <WrapperValidate name={'input1'}>
+            <WrapperValidate name={'Oneparamsinput1'}>
                 <Select  onChange={(value) => setInput1(value)}>
                     {inputparams.map((item) => (
                         <Select.Option value={item}>{item}</Select.Option>
@@ -41,7 +41,7 @@ export default function OneparamsOperations({ inputparams, outputparams, selectm
                 </Select>
             </WrapperValidate>
             <div className="text-2xl mx-1">{convertToSymbol(selectmethod)}</div>
-            <WrapperValidate name={'input2'}>
+            <WrapperValidate name={'Oneparamsinput2'}>
                 <Input onChange={(e) => setInput2(e.target.value)}></Input>
             </WrapperValidate>
         </>

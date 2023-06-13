@@ -1,8 +1,9 @@
 import ReactDOM from 'react-dom/client';
 import { HtmlResize } from '@logicflow/extension';
 import TaskUI from '../innerComponents/TaskUI';
-import FinishedTaskUI from '../innerComponents/FinishedTaskUI';
-export default function getregisterTaskobj(lf: LogicFlow) {
+import TemplateUI from '../innerComponents/templateUI';
+
+export default function getregisterTemplateObj(lf: LogicFlow) {
     class ResizeTaskModel extends HtmlResize.model {
         constructor(data: any, graphModel: any) {
             super(data, graphModel);
@@ -33,16 +34,16 @@ export default function getregisterTaskobj(lf: LogicFlow) {
         }
         initNodeData(data: any) {
             super.initNodeData(data);
-            if(this.properties.handle){
-                this.width = 400;
-                this.height = 250;
-            }
-            else{
-                this.width = 400;
-                this.height = 320
-            }
+            this.width = 400;
+            this.height = 320;
             this.text.draggable = false;
             this.text.editable = false;
+            this.anchorsOffset = [
+                [this.width / 2, 0],
+                [0, this.height / 2],
+                [-this.width / 2, 0],
+                [0, -this.height / 2],
+              ];
         }
         getNodeStyle() {
             const style = super.getNodeStyle();
@@ -58,22 +59,17 @@ export default function getregisterTaskobj(lf: LogicFlow) {
             this.isMounted = false;
         }
         setHtml(rootEl: HTMLElement) {
+            const properties = this.props.model.getProperties();
             if (!this.isMounted) {
-                const properties = this.props.model.getProperties();
                 this.isMounted = true;
                 const root = ReactDOM.createRoot(rootEl);
-                if(properties.handle){
-                    root.render(<FinishedTaskUI properties={properties}> </FinishedTaskUI>)
-                }
-                else{
-                    root.render(<TaskUI  loginflowInstance={lf} />);
-                }
+                root.render(<TemplateUI properties={properties} loginflowInstance={lf} />);
             }
         }
     }
 
     return {
-        type: 'task',
+        type: 'template',
         view: ResizableTaskView,
         model: ResizeTaskModel,
     };

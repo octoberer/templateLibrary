@@ -27,7 +27,7 @@ export default function MultipleParamsOperation({ inputparams, outputparams, sel
     }, [output, input]);
     return (
         <Fragment>
-            <WrapperValidate name={'output'}>
+            <WrapperValidate name={'multipleoutput'}>
                 <Select value={output} onChange={setOutput}>
                     {outputparams.map((item) => (
                         <Select.Option value={item}>{item}</Select.Option>
@@ -36,7 +36,7 @@ export default function MultipleParamsOperation({ inputparams, outputparams, sel
             </WrapperValidate>
             <div className="text-2xl">{'＝'}</div>
             <div className="text-2xl mx-1">{convertToSymbol(selectmethod)}</div>
-            <WrapperValidate name={'input'} width={'60%'}>
+            <WrapperValidate name={'multipleinput'} width={'60%'}>
                 <Select mode="multiple" allowClear placeholder="请选择操作的项" onChange={setInput} options={options} />
             </WrapperValidate>
         </Fragment>

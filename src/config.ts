@@ -1,4 +1,5 @@
 export const nodeList = [
+    { text: '选区', type: 'selectArea', style: 'node-selectArea' },
     {
         text: '开始',
         type: 'start',
@@ -24,5 +25,9 @@ export const nodeList = [
         text: '结束',
         style: 'node-end',
     },
+    {
+        type: 'templateGroup',
+        text: '分组',
+        style: 'node-task',
+    },
 ];
-

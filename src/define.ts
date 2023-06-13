@@ -106,12 +106,11 @@ export interface basicTaskDefine {
     inputhandlArg: handleArg[];
     inputArgs: TaskBindArgs;
     outputArgs: TaskBindArgs;
-    inputTask: basicTaskDefine | processControlDefine | undefined|'start';
-    outputTask: basicTaskDefine | multipleTaskDefine | undefined|'end';
+    inputTask: basicTaskDefine | processControlDefine | undefined | 'start';
+    outputTask: basicTaskDefine | multipleTaskDefine | undefined | 'end';
     handleType: 'basicTask';
     handle: string; //输入、参数作为handle的输入，输出会赋值给output所有的输入,如果是componentDefine的id，则调用对应处理器，如果是基础组件如add，则使用基础运算
 }
-
 //============模板相关
 interface EditHandlArgsdefine {
     [basicTaskDefineInstanceid: string]: handleArg;
@@ -125,8 +124,14 @@ export interface templateComponentArgDefine {
 export interface multipleTaskDefine {
     [BasicTaskinstanceId: string]: basicTaskDefine | template;
 }
+
+// 还不确定输入任务是具体哪一个，但是知道需要输入几个任务，输出几个任务，每个任务的输入输出参数的内容
+
 export interface IdBind {
     [instanceId: string]: string;
+}
+interface templateInputArgs {
+    [taskId: string]: TaskBindArgs;
 }
 export interface template {
     id: string; //当前解析器模板的唯一id
@@ -134,15 +139,13 @@ export interface template {
     doc: string; //文档markdown格式，到时候用一个markdown解析器来显示
     briefName: string;
     componentArg: templateComponentArgDefine; //模板组件的配置参数
-    inputArgs: TaskBindArgs;
-    outputArgs: TaskBindArgs;
-    inputTask: multipleTaskDefine | undefined;
-    outputTask: multipleTaskDefine | undefined;
-    handOutputIdBindOutputId: IdBind;
+    inputArgs: templateInputArgs;
+    outputArgs: templateInputArgs;
     statusId: string; //前端通过状态id查找对应的状态卡片，id->ui，需要手动编写各种组建的状态卡片，这个需求应该挺少，一般顶层组件可能需要
     status: string; //状态卡片的参数，从输入输出和配置项拿，会不断地传给子节点，去丰富状态，json字符串，如果是业务系统中非配置页面，则只展示状态卡片
     handleType: 'template';
     handle: basicTaskDefine | multipleTaskDefine; //输入、参数作为handle的输入，输出会赋值给output所有的输入,如果是componentDefine的id，则调用对应处理器，如果是基础组件如add，则使用基础运算
+    graphData: { nodes: any[]; edges: any[] };
 }
 export interface processControlDefine {
     id: string;
