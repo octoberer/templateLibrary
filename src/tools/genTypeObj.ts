@@ -42,14 +42,21 @@ export const getProcessControlTaskId = (selectmethod: any) => {
             return 100;
     }
 };
-let initialId: { [key: string]: number } = {};
-for (let item of [...basicMethods, { name: 'processControlWaitAll' }, { name: 'processControlWaitAny' }]) {
-    initialId[item.name] = 0;
+if (!localStorage.getItem('initialTaskIdObj')) {
+    localStorage.setItem('initialTaskIdObj', JSON.stringify({ 1: 1, 3: 1, 14: 1 }));
 }
-export const getTaskinstanceId = (selectmethod: any) => {
-    // 请求后端得来，这里由自增长得来
-    initialId[selectmethod]++;
-    return initialId[selectmethod];
+let initialTaskIdObjstr = localStorage.getItem('initialTaskIdObj') as string;
+let initialIdObj = JSON.parse(initialTaskIdObjstr);
+
+export const getTaskinstanceId = (selectmethod: number) => {
+    const id = getBasicTaskId(selectmethod);
+    if (initialIdObj[id] != undefined) {
+        initialIdObj[id]++;
+    } else {
+        initialIdObj[id] = 1;
+    }
+    localStorage.setItem('initialTaskIdObj', JSON.stringify(initialIdObj));
+    return initialIdObj[id];
 };
 export const getcomponentArgObj = ({ paramsName, uiComponent, isFixedValue, value }) => {
     return {
@@ -71,17 +78,26 @@ export const getTaskIOArg = ({ param, doc }) => {
         doc,
     };
 };
-let initialTemplateId = 1001;
+if (!localStorage.getItem('initialTemplateId')) {
+    localStorage.setItem('initialTemplateId', '1001');
+}
+let initialTemplateId = localStorage.getItem('initialTemplateId') || '0';
 export const getTemplateId = () => {
-    initialTemplateId++;
+    initialTemplateId = parseInt(initialTemplateId) + 1 + '';
     return initialTemplateId;
 };
-const TemplateInstanceIdobj: { [key: number]: number } = {};
+if (!localStorage.getItem('TemplateInstanceIdobj')) {
+    localStorage.setItem('initialTemplateInstanceIdobj', JSON.stringify({ 1000: 1 }));
+}
+let str = localStorage.getItem('initialTemplateInstanceIdobj') as string;
+let TemplateInstanceIdobj = JSON.parse(str);
+
 export const getTemplateInstanceId = (id: number) => {
     if (TemplateInstanceIdobj[id] != undefined) {
         TemplateInstanceIdobj[id]++;
     } else {
         TemplateInstanceIdobj[id] = 1;
     }
-    return TemplateInstanceIdobj[id]
+    localStorage.setItem('initialTemplateInstanceIdobj', JSON.stringify(TemplateInstanceIdobj));
+    return TemplateInstanceIdobj[id];
 };

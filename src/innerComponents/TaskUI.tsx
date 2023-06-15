@@ -78,6 +78,7 @@ export default function TaskUI({ loginflowInstance }: { loginflowInstance: Logic
 
     const onFinish = () => {
         setEditstatus('success');
+        debugger
         const Taskobj = {
             id: getBasicTaskId(selectmethod) + '',
             instanceId: getTaskinstanceId(selectmethod) + '',
@@ -86,7 +87,7 @@ export default function TaskUI({ loginflowInstance }: { loginflowInstance: Logic
             inputArgs: inputparams.map((inputparam) => getTaskIOArg({ param: inputparam.name, doc: inputparam.doc })),
             outputArgs: outputparams.map((outputparam) => getTaskIOArg({ param: outputparam.name, doc: '' })),
             handle: selectmethod,
-            handleType: 'basicTask',
+            handleType: 'task',
             inputTask:[],
             outputTask:[]
         };

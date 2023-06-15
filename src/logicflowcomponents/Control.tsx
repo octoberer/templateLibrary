@@ -6,9 +6,9 @@ import { useEffect, useRef, useState } from 'react';
 import Meta from 'antd/es/card/Meta';
 import { Bus } from '../tools/Bus';
 import TemplateForm from './templateForm';
-import { addParProperty, addTemplatedata, createTemplateObj, getAllTemplatedata } from '../tools/transformData';
-import { initialallTemplatedata, tempGraphrenderData } from '../tools/transformData/initialData';
+import { addParProperty, addTemplatedata, generateGraph, getAllTemplatedata } from '../tools/transformData';
 import { graphRenderData2TaskList } from '../tools/transformData/graphdata';
+import { template } from '../define';
 
 export default function Control({ LFinstanceobj }: { LFinstanceobj: LogicFlow | null }) {
     const [selectNodeData, setSelectNodeData] = useState<any>(null);
@@ -45,100 +45,15 @@ export default function Control({ LFinstanceobj }: { LFinstanceobj: LogicFlow | 
     const handleCancel = () => {
         setModalopen(false);
     };
-    function OnCardImport(item: { [any: string]: any }) {
+    function OnCardImport(item: template) {
         setDrawerOpen(false);
-        debugger;
-        // let { newnodes } = old2newgraphData(item.renderNodeData);
-        let { newnodes } = old2newgraphRenderData(item.graphRenderData);
-        const newnodeIds = newnodes.map((item) => item.id);
-        console.log('newnodeIds', newnodeIds);
-        console.log('getGraphData', LFinstanceobj?.getGraphData());
-        debugger
-        const groupElem = {
-            type: 'templateGroup',
-            x: 100,
-            y: 100,
-            children: newnodeIds,
-            properties: {
-                ...item,
-            },
-        };
-        debugger
-        LFinstanceobj?.addNode(groupElem);
-        LFinstanceobj?.render(LFinstanceobj?.getGraphData());
+        // let { newnodes } = old2newgraphRenderData(item.graphRenderData,LFinstanceobj);
+        if (!LFinstanceobj) return;
+        // generateTemplateGraph({templateobj:item,LFinstance:LFinstanceobj})
+        generateGraph(item, LFinstanceobj);
+        LFinstanceobj.render(LFinstanceobj?.getGraphData());
     }
-    const old2newgraphRenderData = (oldgraphData: { nodes: any; edges: any }) => {
-        let { nodes, edges } = oldgraphData;
-        const newnodes = [];
-        const realnewnodes = [];
-        // 找到group
-        const allchildrennodes = [];
-        const groupNodes = nodes.filter((node) => node.children != undefined);
-        for (let group of groupNodes) {
-            const childrennodes = group.children;
-            for (let nodeid of childrennodes) {
-                debugger;
-                let node = nodes.filter((item) => item.id === nodeid)[0];
-                allchildrennodes.push(nodeid);
-               
-                const newnode: BaseNodeModel | undefined = LFinstanceobj?.addNode({
-                    type: node.type,
-                    x: node.x,
-                    y: node.y,
-                    properties: node.properties,
-                });
-                newnodes.push(newnode);
-                for (let edge of edges) {
-                    if (edge.targetNodeId === node.id) {
-                        edge.targetNodeId = newnode?.id || '';
-                    }
-                    if (edge.sourceNodeId === node.id) {
-                        edge.sourceNodeId = newnode?.id || '';
-                    }
-                }
-            }
-            const newnodeIds = newnodes.map((item) => item?.id);
-            const groupElem = {
-                type: 'templateGroup',
-                x: 300,
-                y: 300,
-                children: newnodeIds,
-                properties: group.properties,
-            };
-            const realnewnode = LFinstanceobj?.addNode(groupElem);
-            realnewnodes.push(realnewnode);
-        }
 
-        // 其他节点
-        for (let node of nodes) {
-            if (allchildrennodes.indexOf(node.id) < 0&&node.type=='task') {
-                const newnode: BaseNodeModel | undefined = LFinstanceobj?.addNode({
-                    type: node.type,
-                    x: node.x,
-                    y: node.y,
-                    properties: node.properties,
-                });
-                realnewnodes.push(newnode);
-                for (let edge of edges) {
-                    if (edge.targetNodeId === node.id) {
-                        edge.targetNodeId = newnode?.id || '';
-                    }
-                    if (edge.sourceNodeId === node.id) {
-                        edge.sourceNodeId = newnode?.id || '';
-                    }
-                }
-            }
-        }
-        // 边
-        for (let edge of edges) {
-            LFinstanceobj?.addEdge({
-                type: edge.type,
-                sourceNodeId: edge.sourceNodeId,
-                targetNodeId: edge.targetNodeId,
-            });
-        }
-        return { newnodes: realnewnodes, edges };
-    };
     return (
         <div>
             <Button onClick={() => graphRenderData2TaskList(addParProperty(LFinstanceobj?.getGraphData()))}>调式</Button>
