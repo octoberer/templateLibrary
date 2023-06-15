@@ -87,6 +87,8 @@ export default function TaskUI({ loginflowInstance }: { loginflowInstance: Logic
             outputArgs: outputparams.map((outputparam) => getTaskIOArg({ param: outputparam.name, doc: '' })),
             handle: selectmethod,
             handleType: 'basicTask',
+            inputTask:[],
+            outputTask:[]
         };
         loginflowInstanceref.current.setProperties(clickNode.current.id, Taskobj);
     };

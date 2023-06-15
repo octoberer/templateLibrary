@@ -1,5 +1,4 @@
 import { Button } from 'antd/es/radio';
-import { addTemplatedata, getAllTemplatedata } from '../tools/data';
 import LogicFlow, { BaseNodeModel } from '@logicflow/core';
 import { Avatar, Card, Drawer, Modal } from 'antd';
 import { EditOutlined, SettingOutlined } from '@ant-design/icons';
@@ -7,6 +6,9 @@ import { useEffect, useRef, useState } from 'react';
 import Meta from 'antd/es/card/Meta';
 import { Bus } from '../tools/Bus';
 import TemplateForm from './templateForm';
+import { addParProperty, addTemplatedata, createTemplateObj, getAllTemplatedata } from '../tools/transformData';
+import { initialallTemplatedata, tempGraphrenderData } from '../tools/transformData/initialData';
+import { graphRenderData2TaskList } from '../tools/transformData/graphdata';
 
 export default function Control({ LFinstanceobj }: { LFinstanceobj: LogicFlow | null }) {
     const [selectNodeData, setSelectNodeData] = useState<any>(null);
@@ -37,6 +39,7 @@ export default function Control({ LFinstanceobj }: { LFinstanceobj: LogicFlow | 
         const getGraphData = LFinstanceobj?.getGraphData();
         const NodeData = selectNodeData || getGraphData;
         addTemplatedata(NodeData, { ...TemplateMessage.current });
+        setSelectNodeData([]);
     };
 
     const handleCancel = () => {
@@ -44,41 +47,40 @@ export default function Control({ LFinstanceobj }: { LFinstanceobj: LogicFlow | 
     };
     function OnCardImport(item: { [any: string]: any }) {
         setDrawerOpen(false);
+        debugger;
         // let { newnodes } = old2newgraphData(item.renderNodeData);
-        debugger
-        let { newnodes } = old2newgraphData(LFinstanceobj?.getGraphData());
-
+        let { newnodes } = old2newgraphRenderData(item.graphRenderData);
         const newnodeIds = newnodes.map((item) => item.id);
         console.log('newnodeIds', newnodeIds);
         console.log('getGraphData', LFinstanceobj?.getGraphData());
+        debugger
         const groupElem = {
-            id: `group${item.id}_${item.instanceId}`,
             type: 'templateGroup',
-            x: 300,
-            y: 300,
+            x: 100,
+            y: 100,
             children: newnodeIds,
             properties: {
-                templateId: `${item.id}_${item.instanceId}`,
-                doc: item.doc,
-                briefName: item.briefName,
-                renderNodeData: item.re,
-                handle: item.handle,
-                inputArgs: item.inputArgs,
-                outputArgs: item.outputArgs,
+                ...item,
             },
         };
+        debugger
         LFinstanceobj?.addNode(groupElem);
         LFinstanceobj?.render(LFinstanceobj?.getGraphData());
     }
-    const old2newgraphData = (oldgraphData: { nodes: any; edges: any }) => {
+    const old2newgraphRenderData = (oldgraphData: { nodes: any; edges: any }) => {
         let { nodes, edges } = oldgraphData;
         const newnodes = [];
-        let groups = [];
-        for (let node of nodes) {
-            if (node.children) {
-                groups.push(node);
-            }
-            if (!node.children) {
+        const realnewnodes = [];
+        // 找到group
+        const allchildrennodes = [];
+        const groupNodes = nodes.filter((node) => node.children != undefined);
+        for (let group of groupNodes) {
+            const childrennodes = group.children;
+            for (let nodeid of childrennodes) {
+                debugger;
+                let node = nodes.filter((item) => item.id === nodeid)[0];
+                allchildrennodes.push(nodeid);
+               
                 const newnode: BaseNodeModel | undefined = LFinstanceobj?.addNode({
                     type: node.type,
                     x: node.x,
@@ -95,7 +97,39 @@ export default function Control({ LFinstanceobj }: { LFinstanceobj: LogicFlow | 
                     }
                 }
             }
+            const newnodeIds = newnodes.map((item) => item?.id);
+            const groupElem = {
+                type: 'templateGroup',
+                x: 300,
+                y: 300,
+                children: newnodeIds,
+                properties: group.properties,
+            };
+            const realnewnode = LFinstanceobj?.addNode(groupElem);
+            realnewnodes.push(realnewnode);
         }
+
+        // 其他节点
+        for (let node of nodes) {
+            if (allchildrennodes.indexOf(node.id) < 0&&node.type=='task') {
+                const newnode: BaseNodeModel | undefined = LFinstanceobj?.addNode({
+                    type: node.type,
+                    x: node.x,
+                    y: node.y,
+                    properties: node.properties,
+                });
+                realnewnodes.push(newnode);
+                for (let edge of edges) {
+                    if (edge.targetNodeId === node.id) {
+                        edge.targetNodeId = newnode?.id || '';
+                    }
+                    if (edge.sourceNodeId === node.id) {
+                        edge.sourceNodeId = newnode?.id || '';
+                    }
+                }
+            }
+        }
+        // 边
         for (let edge of edges) {
             LFinstanceobj?.addEdge({
                 type: edge.type,
@@ -103,23 +137,11 @@ export default function Control({ LFinstanceobj }: { LFinstanceobj: LogicFlow | 
                 targetNodeId: edge.targetNodeId,
             });
         }
-        debugger
-        for (let group of groups) {
-            // 生成一个组
-            const groupElem = {
-                id: `group${group.id}_${group.instanceId}`,
-                type: 'templateGroup',
-                x: 300,
-                y: 300,
-                children: group.children,
-                properties: group.properties
-            };
-            LFinstanceobj?.addNode(groupElem);
-        }
-        return { newnodes, edges };
+        return { newnodes: realnewnodes, edges };
     };
     return (
         <div>
+            <Button onClick={() => graphRenderData2TaskList(addParProperty(LFinstanceobj?.getGraphData()))}>调式</Button>
             <Button
                 onClick={() => {
                     console.log(LFinstanceobj?.getGraphRawData());

@@ -106,8 +106,8 @@ export interface basicTaskDefine {
     inputhandlArg: handleArg[];
     inputArgs: TaskBindArgs;
     outputArgs: TaskBindArgs;
-    inputTask: basicTaskDefine | processControlDefine | undefined | 'start';
-    outputTask: basicTaskDefine | multipleTaskDefine | undefined | 'end';
+    inputTask: templateIdOrbasicTaskId[];
+    outputTask: templateIdOrbasicTaskId[];
     handleType: 'basicTask';
     handle: string; //输入、参数作为handle的输入，输出会赋值给output所有的输入,如果是componentDefine的id，则调用对应处理器，如果是基础组件如add，则使用基础运算
 }
@@ -133,6 +133,9 @@ export interface IdBind {
 interface templateInputArgs {
     [taskId: string]: TaskBindArgs;
 }
+interface templateTask{
+    [templateIdOrbasicTaskId:string]:templateIdOrbasicTaskId[]
+}
 export interface template {
     id: string; //当前解析器模板的唯一id
     instanceId: string; //当前解析器唯一id-+
@@ -141,19 +144,36 @@ export interface template {
     componentArg: templateComponentArgDefine; //模板组件的配置参数
     inputArgs: templateInputArgs;
     outputArgs: templateInputArgs;
+    inputTask: templateTask;
+    outputTask: templateTask;
     statusId: string; //前端通过状态id查找对应的状态卡片，id->ui，需要手动编写各种组建的状态卡片，这个需求应该挺少，一般顶层组件可能需要
     status: string; //状态卡片的参数，从输入输出和配置项拿，会不断地传给子节点，去丰富状态，json字符串，如果是业务系统中非配置页面，则只展示状态卡片
     handleType: 'template';
     handle: basicTaskDefine | multipleTaskDefine; //输入、参数作为handle的输入，输出会赋值给output所有的输入,如果是componentDefine的id，则调用对应处理器，如果是基础组件如add，则使用基础运算
-    graphData: { nodes: any[]; edges: any[] };
+    graphRenderData: { nodes: nodedefine[]; edges: edgeDefine[] };
+}
+interface nodedefine{
+    id?:string,
+    nodeType:'task'|'templateGroup'|'processControlWaitAny'|'processControlWaitAll',
+    x:number,
+    y:number,
+    width:number,
+    height:number
+}
+interface edgeDefine{
+    id?:string,
+    sourceNodeID:number,
+    targetNodeId:number
 }
 export interface processControlDefine {
     id: string;
     instanceId: string;
     inputArgs: TaskBindArgs;
     outputArgs: TaskBindArgs;
-    inputTask: multipleTaskDefine;
-    outputTask: multipleTaskDefine | basicTaskDefine;
+    inputTask: basicTaskId[];
+    outputTask: basicTaskId[];
     handle: 'waitany' | 'waitAll';
     handleType: 'processControl';
 }
+type templateIdOrbasicTaskId=string
+type basicTaskId=string

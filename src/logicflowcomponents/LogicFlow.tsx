@@ -36,22 +36,22 @@ export default function LogicFlowCanvas({ getLFinstanceobj }: LogicFlowCanvaspro
             console.log('edge:add', data);
         });
         LogicFlowobj.on('node:mousemove', ({ data }) => {
-            if (data.type != 'processControlWaitAny' && data.type != 'processControlWaitAll') {
-                return;
-            }
-            console.log('node:mousemove');
-            if (!allProcessComponent[data.id]) {
-                currentChoseComponent.nodeId = data.id;
-                currentChoseComponent.ComponentType = data.type;
-                currentChoseComponent.properties = {
-                    id: getProcessControlTaskId(data.type),
-                    instanceId: getTaskinstanceId(data.type) + '',
-                    handleType: 'processControl',
-                    handle: data.type,
-                };
-                allProcessComponent[data.id] = currentChoseComponent;
-                LogicFlowobj.setProperties(data.id, currentChoseComponent.properties);
-            }
+            // if (data.type != 'processControlWaitAny' && data.type != 'processControlWaitAll') {
+            //     return;
+            // }
+            // console.log('node:mousemove');
+            // if (!allProcessComponent[data.id]) {
+            //     currentChoseComponent.nodeId = data.id;
+            //     currentChoseComponent.ComponentType = data.type;
+            //     currentChoseComponent.properties = {
+            //         id: getProcessControlTaskId(data.type),
+            //         instanceId: getTaskinstanceId(data.type) + '',
+            //         handleType: 'processControl',
+            //         handle: data.type,
+            //     };
+            //     allProcessComponent[data.id] = currentChoseComponent;
+            //     LogicFlowobj.setProperties(data.id, currentChoseComponent.properties);
+            // }
         });
         LogicFlowobj.on('blank:click', () => {});
         LogicFlowobj.on('connection:not-allowed', (data) => {});

@@ -71,7 +71,7 @@ export const getTaskIOArg = ({ param, doc }) => {
         doc,
     };
 };
-let initialTemplateId = 0;
+let initialTemplateId = 1001;
 export const getTemplateId = () => {
     initialTemplateId++;
     return initialTemplateId;
