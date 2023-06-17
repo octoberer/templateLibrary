@@ -1,4 +1,4 @@
-import { addAndgetProcessControlId, addAndgetTemplateId, addProcessControlObj,  getProcessControlObj,  getTemplateInstanceId } from '../tools/genTypeObj';
+import { addAndgetProcessControlId, addAndgetTaskId, addAndgetTemplateId, addProcessControlObj,  getBasicTaskId,  getProcessControlObj,  getTemplateInstanceId } from '../tools/genTypeObj';
 import styles from './Nodepanel.module.css';
 import LogicFlow from '@logicflow/core';
 
@@ -20,15 +20,24 @@ export default function NodePanel({ nodeList, LFinstanceobj }: nodeListType) {
             return;
         }
         else if (item.type == 'processControlWaitAny' || item.type == 'processControlWaitAll') {
-            let id=addAndgetProcessControlId(item.type)
-            addProcessControlObj(id)
+            let id=addAndgetProcessControlId()
             LFinstanceobj.dnd.startDrag({
                 type: item.type,
                 properties: {
                     id: id+'',
-                    instanceId: getProcessControlObj(id),
                     handleType: 'processControl',
                     handle: item.type,
+                    outputTask:[],
+                    inputTask:[]
+                },
+            });
+        }
+        else if (item.type == 'task') {
+            LFinstanceobj.dnd.startDrag({
+                type: item.type,
+                properties: {
+                    id: addAndgetTaskId() + '',
+                    handleType: 'task',
                     outputTask:[],
                     inputTask:[]
                 },
@@ -43,8 +52,8 @@ export default function NodePanel({ nodeList, LFinstanceobj }: nodeListType) {
                     instanceId: getTemplateInstanceId(id),
                     handleType: 'template',
                     handle: item.type,
-                    outputTask:{},
-                    inputTask:{}
+                    outputTask:[],
+                    inputTask:[]
                 },
             });
         }

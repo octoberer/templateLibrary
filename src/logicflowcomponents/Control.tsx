@@ -6,9 +6,9 @@ import { useEffect, useRef, useState } from 'react';
 import Meta from 'antd/es/card/Meta';
 import { Bus } from '../tools/Bus';
 import TemplateForm from './templateForm';
-import { addParProperty, addTemplatedata, generateGraph, getAllTemplatedata } from '../tools/transformData';
-import { graphRenderData2TaskList } from '../tools/transformData/graphdata';
+import {  generateGraph, graphData2taklist } from '../tools/transformData';
 import { template } from '../define';
+import { getAllTemplatedata } from '../tools/transformData/taskList2Graph';
 
 export default function Control({ LFinstanceobj }: { LFinstanceobj: LogicFlow | null }) {
     const [selectNodeData, setSelectNodeData] = useState<any>(null);
@@ -38,7 +38,7 @@ export default function Control({ LFinstanceobj }: { LFinstanceobj: LogicFlow | 
         setModalopen(false);
         const getGraphData = LFinstanceobj?.getGraphData();
         const NodeData = selectNodeData || getGraphData;
-        addTemplatedata(NodeData, { ...TemplateMessage.current });
+        graphData2taklist(NodeData, { ...TemplateMessage.current })
         setSelectNodeData([]);
     };
 
@@ -57,7 +57,9 @@ export default function Control({ LFinstanceobj }: { LFinstanceobj: LogicFlow | 
 
     return (
         <div>
-            <Button onClick={() => graphRenderData2TaskList(addParProperty(LFinstanceobj?.getGraphData()))}>调式</Button>
+            <Button onClick={()=>{
+                handleOk()
+            }}>调式</Button>
             <Button
                 onClick={() => {
                     console.log(LFinstanceobj?.getGraphRawData());

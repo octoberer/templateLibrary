@@ -103,16 +103,22 @@ type templateId = string;
 export interface basicTaskDefine {
     id: string;
     instanceId: string; //运用改任务计算方式的一个
+    inputTask: templateOutput5inputTask[];
+    outputTask: templateOutput5inputTask[];
+    handleType: 'task';
+    handle: string; //输入、参数作为handle的输入，输出会赋值给output所有的输入,如果是componentDefine的id，则调用对应处理器，如果是基础组件如add，则使用基础运算
+    parId: templateId;
+}
+export interface basicTaskOntologyDefine{
+    id: string;
     outputhandlArg: handleArg;
     inputhandlArg: handleArg[];
     inputArgs: TaskBindArgs;
     outputArgs: TaskBindArgs;
-    inputTask: templateIdOrbasicTaskId[];
-    outputTask: templateIdOrbasicTaskId[];
+    inputTask: templateOutput5inputTask[];
+    outputTask: templateOutput5inputTask[];
     handleType: 'task';
     handle: string; //输入、参数作为handle的输入，输出会赋值给output所有的输入,如果是componentDefine的id，则调用对应处理器，如果是基础组件如add，则使用基础运算
-    parId: templateId;
-    gen?: boolean;
 }
 //============模板相关
 interface EditHandlArgsdefine {
@@ -133,10 +139,13 @@ export interface IdBind {
 interface templateInputArgs {
     [taskId: string]: TaskBindArgs;
 }
-interface templateTask {
-    //以模板内部被链接的任务id为建，值为被链接的外部任务的id
-    [templateIdOrbasicTaskId: string]: templateIdOrbasicTaskId[];
+interface templateOutput5inputTask {
+    source: basicTaskId;
+    sourcerelations:templateTaskId[];
+    target: basicTaskId;
+    targetrelations:templateTaskId[];
 }
+
 export interface template {
     id: string; //当前解析器模板的唯一id
     doc: string; //文档markdown格式，到时候用一个markdown解析器来显示
@@ -154,8 +163,8 @@ export interface templateTaskDefine {
     instanceId: string; //当前解析器唯一id-+
     inputArgs?: templateInputArgs;
     outputArgs?: templateInputArgs;
-    inputTask: templateTask;
-    outputTask: templateTask;
+    inputTask: templateOutput5inputTask[];
+    outputTask: templateOutput5inputTask[];
     statusId: string; //前端通过状态id查找对应的状态卡片，id->ui，需要手动编写各种组建的状态卡片，这个需求应该挺少，一般顶层组件可能需要
     status: string; //状态卡片的参数，从输入输出和配置项拿，会不断地传给子节点，去丰富状态，json字符串，如果是业务系统中非配置页面，则只展示状态卡片
     handleType: 'templateGroup';
@@ -168,12 +177,14 @@ export interface processControlDefine {
     instanceId: string;
     inputArgs: TaskBindArgs;
     outputArgs: TaskBindArgs;
-    inputTask: basicTaskId[];
-    outputTask: basicTaskId[];
+    inputTask: templateOutput5inputTask[];
+    outputTask: templateOutput5inputTask[];
     handle?: 'waitany' | 'waitAll';
     handleType: 'processControlWaitAny' | 'processControlWaitAll';
     parId: templateId;
     gen?: boolean;
 }
+type templateTaskId= string
 type templateIdOrbasicTaskId = string;
 type basicTaskId = string;
+export type allTaskDefine = basicTaskDefine | templateTaskDefine | processControlDefine;

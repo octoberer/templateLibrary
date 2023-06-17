@@ -60,18 +60,18 @@ export default function getregisterTemplateGroupObj(lf: LogicFlow) {
                     return false;
                 },
             };
-            // this.targetRules.push(noTarget);
+            this.targetRules.push(noTarget);
         }
-        isAllowAppendIn(nodeData) {
-            // 设置只允许custom-rect节点被添加到此分组中
-            return nodeData.type === "no";
-          }
+        // isAllowAppendIn(nodeData) {
+        //     // 设置只允许custom-rect节点被添加到此分组中
+        //     return nodeData.type === 'no';
+        // }
         getAddableOutlineStyle() {
             const style = super.getAddableOutlineStyle();
-            style.stroke = "#AEAFAE";
-            style.strokeDasharray = "3 3";
+            style.stroke = '#AEAFAE';
+            style.strokeDasharray = '3 3';
             return style;
-          }
+        }
         getNodeStyle() {
             const style = super.getNodeStyle();
             style.stroke = '#989891';
