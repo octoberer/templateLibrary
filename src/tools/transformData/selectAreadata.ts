@@ -38,7 +38,7 @@ export function selectAreadata2graphRenderData(selectAreaArray: any[]) {
                         width: item._width,
                         x: item.x - offsetx,
                         y: item.y - offsety,
-                        properties: {...item.getProperties()},
+                        properties: item.getProperties(),
                         children: [...item.children],
                     });
                 } else {
@@ -63,6 +63,7 @@ export function selectAreadata2graphRenderData(selectAreaArray: any[]) {
             }
         }
     );
+    debugger
     return {
         nodes,
         edges,

@@ -13,8 +13,7 @@ import {
     getregisterTemplateGroupObj,
     getregisterTemplateObj,
 } from '../registerNode';
-import { allProcessComponent, currentChoseComponent } from '../data';
-import { getProcessControlTaskId, getTaskinstanceId } from '../tools/genTypeObj';
+import { tempGraphrenderData } from '../tools/transformData/initialData';
 
 interface LogicFlowCanvaspropsType {
     getLFinstanceobj: (obj: LogicFlow) => void;
@@ -105,15 +104,7 @@ export default function LogicFlowCanvas({ getLFinstanceobj }: LogicFlowCanvaspro
                 fontSize: 16,
             },
         });
-        lfinstance.render({
-            // nodes: [
-            //     {
-            //         type: 'start',
-            //         x: 800,
-            //         y: 100,
-            //     },
-            // ],
-        });
+        lfinstance.render({});
         // 给父祖件传实例值
         getLFinstanceobj(lfinstance);
         // 注册监听事件

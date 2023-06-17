@@ -1,8 +1,13 @@
 import LogicFlow, { BaseNodeModel } from '@logicflow/core';
-import { basicTaskDefine, template } from '../../define';
+import { basicTaskDefine, processControlDefine, template, templateTaskDefine } from '../../define';
 import { tempGraphrenderData } from './initialData';
-import { getAllTaskList } from '.';
-import { getTemplateInstanceId } from '../genTypeObj';
+import { addTaskList, getAllTaskList, getTaskListByID } from '.';
+import { addTemplateInstance, getTemplateInstanceId } from '../genTypeObj';
+interface graphdataDefine {
+    nodes: any;
+    edges: any;
+    topTemplateId: string;
+}
 
 const getAllSourceAndTargetNodes = (data: { nodes: any; edges: any }) => {
     // 找到流程开始节点，start
@@ -49,127 +54,164 @@ function graphdataobj2templatestructurefromStart(
     sourceNodes: { properties: any }[]
 ) {
     // 得到源节点作为空节点的targetnodes，来完善这些节点的inputTask
-
     solveAllSourcenodes(data, sourceNodes, res);
 }
-function solveAllSourcenodes(data: { nodes: any; edges: any }, sourceNodes: { properties: any }[], res: { [x: string]: any }) {
-    sourceNodes.forEach((item: { properties: any }) => {
-        let tempproperties = item.properties;
-        let currentpar = tempproperties.par;
-        let nodeid = `${tempproperties.id}_${tempproperties.instanceId}`;
-        if (!currentpar) {
-            res[nodeid] = {
+function solveAllSourcenodes(
+    data: graphdataDefine,
+    sourceNodes: BaseNodeModel[],
+    res: { [id: string]: template | templateTaskDefine | basicTaskDefine }
+) {
+    sourceNodes.forEach((node: BaseNodeModel) => {
+        const { nodes, edges, topTemplateId } = data;
+        let tempproperties = node.properties as basicTaskDefine;
+        // 初始化没有parId
+        let beConnectedParTaskkey = tempproperties.parId;
+        let nodeUniqueId = getUniqueIdBynode(node);
+        let allfindEdgeIds = edges
+            .filter((item: { sourceNodeId: any }) => item.sourceNodeId === node.id)
+            .map((item: { targetNodeId: any }) => item.targetNodeId);
+        let targetNodes = nodes.filter((item: { id: any }) => allfindEdgeIds.indexOf(item.id) != -1);
+        if (targetNodes.length === 0 && !beConnectedParTaskkey) {
+            res[nodeUniqueId] = {
+                ...tempproperties,
+                inputTask: [],
+                parId: topTemplateId,
+            };
+        } else if (!beConnectedParTaskkey) {
+            res[nodeUniqueId] = {
                 ...tempproperties,
                 inputTask: [],
             };
         }
-        makeTaskInputTaskConnection({ currentNode: item, currentNodeId: nodeid, data, res });
+        debugger;
+        makeTaskInputTaskConnection({ beConnectedNode: node, res, targetNodes, data });
     });
 }
-function makeTaskInputTaskConnection({ currentNode, currentNodeId, data, res }) {
-    const currentpar = currentNode.properties.par;
-    const { nodes, edges, templateUniqueId } = data;
-    let allfindEdgeIds = edges
-        .filter((item: { sourceNodeId: any }) => item.sourceNodeId === currentNode.id)
-        .map((item: { targetNodeId: any }) => item.targetNodeId);
-    let targetNodes = nodes.filter((item: { id: any }) => allfindEdgeIds.indexOf(item.id) != -1);
-    // 将每个目标节点与currentNode建立inputtask的联系
-    targetNodes.forEach((item: { type: string; properties: any }) => {
-        if (item.type !== 'end') {
-            let tempproperties = item.properties;
-            let nodeid = `${tempproperties.id}_${tempproperties.instanceId}`;
+function AllareNeedConnected(beConnectedParTaskkey, nodeparId, topTemplateId) {
+    if (
+        (beConnectedParTaskkey === undefined || beConnectedParTaskkey == topTemplateId) &&
+        (nodeparId === undefined || nodeparId === topTemplateId)
+    ) {
+        return true;
+    }
+}
+function makeTaskInputTaskConnection({
+    beConnectedNode,
+    res,
+    targetNodes,
+    data,
+}: {
+    beConnectedNode: BaseNodeModel;
+    targetNodes: BaseNodeModel[];
+    res: { [id: string]: template | templateTaskDefine | basicTaskDefine };
+    data: graphdataDefine;
+}) {
+    const { nodes, edges, topTemplateId } = data;
+    const beConnectedTaskkey = getUniqueIdBynode(beConnectedNode);
+    const beConnectedParTaskkey = getTaskListByID(beConnectedTaskkey)?.parId;
+    // 将每个目标节点与beConnectedNode建立inputtask的联系
+    targetNodes.forEach((node: BaseNodeModel) => {
+        if (node.type !== 'end') {
+            let nodeid = getUniqueIdBynode(node);
+            let nodeparId = getTaskListByID(nodeid)?.parId;
             // 同级节点不再重复建立关系
-            if (currentpar != undefined && tempproperties.par === currentpar) {
+            if (beConnectedParTaskkey != undefined&&beConnectedParTaskkey != topTemplateId && nodeparId === beConnectedParTaskkey) {
             }
             // basicTask初始化建立关系
-            else if (currentpar === undefined && tempproperties.par === undefined) {
-                if (item.type === 'processControlWaitAny' || item.type === 'processControlWaitAll') {
-                    res[nodeid] = {
-                        ...tempproperties,
-                        ...res[nodeid], //合并outputtask
-                        inputArgs: res[currentNodeId].outputArgs,
-                        inputTask: res[nodeid] ? [...res[nodeid]?.inputTask, currentNodeId] : [currentNodeId],
-                        parId: templateUniqueId,
-                    };
-                } else if (item.type === 'task') {
-                    res[nodeid] = {
-                        ...tempproperties,
-                        ...res[nodeid], //合并outputtask
-                        inputTask: res[nodeid] ? [...res[nodeid]?.inputTask, currentNodeId] : [currentNodeId],
-                        parId: templateUniqueId,
-                        gen: false,
-                    };
+            else if (AllareNeedConnected(beConnectedParTaskkey, nodeparId, topTemplateId)) {
+                if (node.type === 'processControlWaitAny' || node.type === 'processControlWaitAll') {
+                    let properties = node.properties as processControlDefine;
+                    let tempresobj = res[beConnectedTaskkey] as unknown as processControlDefine;
+                    let res_nodeid = res[nodeid] as unknown as processControlDefine;
+                    res_nodeid = res_nodeid
+                        ? genResTaskobj({ ...res[nodeid], inputTask: mergeduplicates([...res[nodeid].inputTask, beConnectedTaskkey]) })
+                        : genResTaskobj({
+                              ...properties,
+                              handleType: node.type,
+                              inputTask: [beConnectedTaskkey],
+                              parId: topTemplateId,
+                              inputArgs: tempresobj.outputArgs,
+                          });
+                    res[nodeid] = res_nodeid;
+                } else if (node.type === 'task') {
+                    let properties = node.properties as basicTaskDefine;
+                    res[nodeid] = res[nodeid]
+                        ? genResTaskobj({ ...res[nodeid], inputTask: mergeduplicates([...res[nodeid].inputTask, beConnectedTaskkey]) })
+                        : genResTaskobj({
+                              ...properties,
+                              handleType: node.type,
+                              inputTask: [beConnectedTaskkey],
+                              parId: topTemplateId,
+                          });
                 }
             }
             // 外节点和内部的group建立联系,给group补充
-            else if (currentpar === undefined && tempproperties.par != undefined) {
-                debugger;
-                let parProperties = tempproperties.par.properties;
-                let parId = `${parProperties.id}_${parProperties.instanceId}`;
-                if (item.type === 'processControlWaitAny' || item.type === 'processControlWaitAll') {
-                    res[parId] = res[parId]
-                        ? {
-                              ...parProperties,
-                              gen: false,
-                              ...res[parId], //合并outputtask
-                              inputArgs: res[currentNodeId].outputArgs,
+            else if (
+                (beConnectedParTaskkey === undefined || beConnectedParTaskkey === topTemplateId) &&
+                nodeparId != undefined &&
+                nodeparId != topTemplateId
+            ) {
+                let templateTask = getTaskListByID(nodeparId) as templateTaskDefine;
+                let instanceId = getTemplateInstanceId(nodeparId);
+                let uniqueParId = `${nodeparId}_${instanceId}`;
+                if (node.type === 'task') {
+                    res[uniqueParId] = res[uniqueParId]
+                        ? genResTaskobj({
+                              ...res[uniqueParId], //合并outputtask
                               // 为模板补充inputTask
-                              inputTask: res[parId].inputTask[nodeid]
-                                  ? { [nodeid]: [...res[parId].inputTask[nodeid], currentNodeId] }
-                                  : { [nodeid]: currentNodeId },
-                              parId: templateUniqueId,
-                          }
-                        : {
-                              ...parProperties,
-                              gen: false,
-                              inputArgs: res[currentNodeId].outputArgs,
-                              // 为模板补充inputTask
-                              inputTask: { [nodeid]: [currentNodeId] },
-                              parId: templateUniqueId,
-                          };
-                } else if (item.type === 'task') {
-                    res[parId] = res[parId]
-                        ? {
-                              ...parProperties,
-                              ...res[parId], //合并outputtask
-                              // 为模板补充inputTask
-                              inputTask: res[parId].inputTask[nodeid]
-                                  ? { [nodeid]: [...res[parId].inputTask[nodeid], currentNodeId] }
-                                  : { [nodeid]: currentNodeId },
-                              parId: templateUniqueId,
-                              instanceId:getTemplateInstanceId(res[parId].id)
-                          }
-                        : {
-                              ...parProperties,
-                              inputArgs: res[currentNodeId].outputArgs,
-                              // 为模板补充inputTask
-                              inputTask: { [nodeid]: [currentNodeId] },
-                              parId: templateUniqueId,
-                          };
+                              inputTask: res[uniqueParId].inputTask[nodeid]
+                                  ? { [nodeid]: mergeduplicates([...res[uniqueParId].inputTask[nodeid], beConnectedTaskkey]) }
+                                  : { [nodeid]: beConnectedTaskkey },
+                          })
+                        : genResTaskobj({
+                              ...templateTask,
+                              inputArgs: res[beConnectedTaskkey].outputArgs,
+                              // 为模板初始化inputTask
+                              inputTask: { [nodeid]: [beConnectedTaskkey] },
+                              parId: topTemplateId,
+                              instanceId,
+                          });
                 }
             }
             // 外节点和内部的group建立联系,给外界节点补充
-            else if (currentpar !== undefined && tempproperties.par === undefined) {
-                let parProperties = currentpar.properties;
-                let parId = `${parProperties.id}_${parProperties.instanceId}`;
-                if (item.type === 'processControlWaitAny' || item.type === 'processControlWaitAll') {
-                    res[nodeid] = {
-                        ...tempproperties,
-                        ...res[nodeid], //合并outputtask
-                        inputArgs: res[currentNodeId].outputArgs,
-                        inputTask: res[nodeid] ? [...res[nodeid]?.inputTask, parId] : [parId],
-                        parId: templateUniqueId,
-                    };
-                } else if (item.type === 'task') {
-                    res[nodeid] = {
-                        ...tempproperties,
-                        ...res[nodeid], //合并outputtask
-                        inputTask: res[nodeid] ? [...res[nodeid]?.inputTask, parId] : [parId],
-                        parId: templateUniqueId,
-                    };
+            else if (beConnectedParTaskkey !== undefined && nodeparId === undefined) {
+                if (node.type === 'processControlWaitAny' || node.type === 'processControlWaitAll') {
+                    let processControlTask = getTaskListByID(nodeid) as processControlDefine;
+                    res[nodeid] = res[nodeid]
+                        ? genResTaskobj({
+                              ...res[nodeid],
+                              //合并inputTask
+                              inputTask: mergeduplicates([...res[nodeid]?.inputTask, getUniqueIdBytemplateId(beConnectedParTaskkey)]),
+                          })
+                        : genResTaskobj({
+                              ...processControlTask,
+                              ...res[nodeid],
+                              inputArgs: res[beConnectedTaskkey].outputArgs,
+                              //初始化inputTask
+                              inputTask: [getUniqueIdBytemplateId(beConnectedParTaskkey)],
+                              parId: topTemplateId,
+                          });
+                } else if (node.type === 'task') {
+                    let basicTask = getTaskListByID(nodeid) as basicTaskDefine;
+                    res[nodeid] = res[nodeid]
+                        ? genResTaskobj({
+                              ...res[nodeid],
+                              //合并inputTask
+                              inputTask: mergeduplicates([...res[nodeid]?.inputTask, getUniqueIdBytemplateId(beConnectedParTaskkey)]),
+                          })
+                        : genResTaskobj({
+                              ...basicTask,
+                              ...res[nodeid],
+                              inputTask: [getUniqueIdBytemplateId(beConnectedParTaskkey)],
+                              parId: topTemplateId,
+                          });
                 }
             }
-            makeTaskInputTaskConnection({ currentNode: item, currentNodeId: nodeid, data, res });
+            let allfindEdgeIds = edges
+                .filter((item: { sourceNodeId: any }) => item.sourceNodeId === node.id)
+                .map((item: { targetNodeId: any }) => item.targetNodeId);
+            let targetNodes = nodes.filter((item: { id: any }) => allfindEdgeIds.indexOf(item.id) != -1);
+            makeTaskInputTaskConnection({ beConnectedNode: node, res, targetNodes, data: data });
         }
     });
 }
@@ -182,127 +224,143 @@ function graphdataobj2templatestructurefromEnd(
     // 完善这些节点的输入组件
     solveAllTargetnodes(data, targetNodes, res);
 }
-function solveAllTargetnodes(data: { nodes: any; edges: any }, targetNodes: { properties: any }[], res: { [x: string]: any }) {
-    targetNodes.forEach((item: { properties: any }) => {
-        let tempproperties = item.properties;
-        let currentpar = tempproperties.par;
-        let nodeid = `${tempproperties.id}_${tempproperties.instanceId}`;
-        if (!currentpar) {
+function solveAllTargetnodes(data: graphdataDefine, targetNodes: BaseNodeModel, res: { [x: string]: any }) {
+    targetNodes.forEach((node: BaseNodeModel) => {
+        let taskobj = getTaskListByID(getUniqueIdBynode(node));
+        let nodeid = getUniqueIdBynode(node);
+        if (!getTaskListByID(nodeid)) {
             res[nodeid] = {
-                ...tempproperties,
+                ...taskobj,
                 ...res[nodeid], //合并inputtask
                 outputTask: [],
+                parId: data.topTemplateId,
             };
         }
-        makeTaskOutputTaskConnection({ currentNode: item, currentNodeId: nodeid, data, res });
+        makeTaskOutputTaskConnection({ beConnectedNode: node, data, res });
     });
 }
-function makeTaskOutputTaskConnection({ currentNode, currentNodeId, data, res }) {
-    const currentpar = currentNode.properties.par;
-    const { nodes, edges, templateUniqueId } = data;
+function makeTaskOutputTaskConnection({
+    beConnectedNode,
+    data,
+    res,
+}: {
+    beConnectedNode: BaseNodeModel;
+    data: graphdataDefine;
+    res: { [id: string]: template | templateTaskDefine | basicTaskDefine };
+}) {
+    const beConnectedParTaskkey = getTaskListByID(getUniqueIdBynode(beConnectedNode))?.parId;
+    const beConnectedTaskkey = getUniqueIdBynode(beConnectedNode);
+    const { nodes, edges, topTemplateId } = data;
     let allfindEdgeIds = edges
-        .filter((item: { targetNodeId: any }) => item.targetNodeId === currentNode.id)
+        .filter((item: { targetNodeId: any }) => item.targetNodeId === beConnectedNode.id)
         .map((item: { sourceNodeId: any }) => item.sourceNodeId);
     let SourceNodes = nodes.filter((item: { id: any }) => allfindEdgeIds.indexOf(item.id) != -1);
-    SourceNodes.forEach((item: { type: string; properties: any }) => {
-        if (item.type !== 'start') {
-            let tempproperties = item.properties;
-            let nodeid = `${tempproperties.id}_${tempproperties.instanceId}`;
+    SourceNodes.forEach((node: BaseNodeModel) => {
+        if (node.type !== 'start') {
+            let tempproperties = node.properties;
+            let nodeid = getUniqueIdBynode(node);
+            let nodeParid = getTaskListByID(nodeid)?.parId;
+            debugger
             // 同级节点不再重复建立关系
-            if (currentpar != undefined && tempproperties.par === currentpar) {
+            if (beConnectedParTaskkey != undefined&&beConnectedParTaskkey != topTemplateId && nodeParid === beConnectedParTaskkey) {
             }
             // basicTask初始化建立关系
-            else if (currentpar === undefined && tempproperties.par === undefined) {
-                if (item.type === 'processControlWaitAny' || item.type === 'processControlWaitAll') {
+            else if (AllareNeedConnected(beConnectedParTaskkey, nodeParid, topTemplateId)) {
+                if (node.type === 'processControlWaitAny' || node.type === 'processControlWaitAll') {
+                    res[nodeid] = genResTaskobj({
+                        ...tempproperties,
+                        ...res[nodeid],
+                        outputArgs: res[beConnectedTaskkey].inputArgs,
+                        outputTask: res[nodeid] ? mergeduplicates([...res[nodeid]?.outputTask, beConnectedTaskkey]) : [beConnectedTaskkey],
+                        parId: topTemplateId,
+                    });
+                } else if (node.type === 'task') {
                     res[nodeid] = {
                         ...tempproperties,
                         ...res[nodeid], //合并outputtask
-                        outputArgs: res[currentNodeId].inputArgs,
-                        outputTask: res[nodeid] ? [...res[nodeid]?.outputTask, currentNodeId] : [currentNodeId],
-                        parId: templateUniqueId,
-                    };
-                } else {
-                    res[nodeid] = {
-                        ...tempproperties,
-                        ...res[nodeid], //合并outputtask
-                        outputTask: res[nodeid] ? [...res[nodeid]?.outputTask, currentNodeId] : [currentNodeId],
-                        parId: templateUniqueId,
+                        outputTask: res[nodeid] ? mergeduplicates([...res[nodeid]?.outputTask, beConnectedTaskkey] ): [beConnectedTaskkey],
+                        parId: topTemplateId,
                     };
                 }
             }
             // 外节点和内部的group建立联系
-            else if (currentpar === undefined && tempproperties.par != undefined) {
-                let parProperties = tempproperties.par.properties;
-                let parId = `${tempproperties.par.properties.id}_${tempproperties.par.properties.instanceId}`;
-                if (item.type === 'processControlWaitAny' || item.type === 'processControlWaitAll') {
-                    res[parId] = res[parId]
+            else if ((beConnectedParTaskkey === undefined || beConnectedParTaskkey === topTemplateId) && nodeParid != undefined) {
+                let templateTaskobj = getTaskListByID(nodeParid);
+                let instanceId = getTemplateInstanceId(nodeParid);
+                let uniqueParId = `${nodeParid}_${instanceId}`;
+                if (node.type === 'processControlWaitAny' || node.type === 'processControlWaitAll') {
+                    res[uniqueParId] = res[uniqueParId]
                         ? {
-                              ...parProperties,
-                              ...res[parId], //合并outputtask
-                              inputArgs: res[currentNodeId].outputArgs,
+                              ...res[uniqueParId], //合并outputtask
+                              outputArgs: res[beConnectedTaskkey].inputArgs,
                               // 为模板补充inputTask
-                              outputTask: res[parId].outputTask[nodeid]
-                                  ? { [nodeid]: [...res[parId].outputTask[nodeid], currentNodeId] }
-                                  : { [nodeid]: [currentNodeId] },
-                              parId: templateUniqueId,
+                              outputTask: res[uniqueParId].outputTask[nodeid]
+                                  ? { [nodeid]: mergeduplicates([...res[uniqueParId].outputTask[nodeid], beConnectedTaskkey]) }
+                                  : { [nodeid]: [beConnectedTaskkey] },
                           }
                         : {
-                              ...parProperties,
-                              inputArgs: res[currentNodeId].outputArgs,
-                              // 为模板补充inputTask
-                              outputTask: { [nodeid]: [currentNodeId] },
-                              parId: templateUniqueId,
+                              ...templateTaskobj,
+                              outputArgs: res[beConnectedTaskkey].inputArgs,
+                              // 为模板初始化outputTask
+                              outputTask: { [nodeid]: [beConnectedTaskkey] },
+                              parId: topTemplateId,
+                              instanceId,
                           };
-                } else if (item.type === 'task') {
-                    res[parId] = res[parId]
+                } else if (node.type === 'task') {
+                    res[uniqueParId] = res[uniqueParId]
                         ? {
-                              ...parProperties,
-                              ...res[parId], //合并outputtask
+                              ...res[uniqueParId], //合并outputtask
                               // 为模板补充inputTask
-                              outputTask: res[parId].outputTask[nodeid]
-                                  ? { [nodeid]: [...res[parId].outputTask[nodeid], currentNodeId] }
-                                  : { [nodeid]: [currentNodeId] },
-                              parId: templateUniqueId,
+                              outputTask: res[uniqueParId].outputTask[nodeid]
+                                  ? { [nodeid]: mergeduplicates([...res[uniqueParId].outputTask[nodeid], beConnectedTaskkey]) }
+                                  : { [nodeid]: [beConnectedTaskkey] },
                           }
                         : {
-                              ...parProperties,
-                              inputArgs: res[currentNodeId].outputArgs,
+                              ...templateTaskobj,
+                              inputArgs: res[beConnectedTaskkey].outputArgs,
                               // 为模板补充inputTask
-                              outputTask: { [nodeid]: [currentNodeId] },
-                              parId: templateUniqueId,
+                              outputTask: { [nodeid]: [beConnectedTaskkey] },
+                              parId: topTemplateId,
+                              instanceId: getTemplateInstanceId(templateTaskobj.id),
                           };
                 }
             }
             // 外节点和内部的group建立联系,给外界节点补充
-            else if (currentpar !== undefined && tempproperties.par === undefined) {
-                let parProperties = currentpar.properties;
-                let parId = `${parProperties.id}_${parProperties.instanceId}`;
-                if (item.type === 'processControlWaitAny' || item.type === 'processControlWaitAll') {
+            else if (beConnectedParTaskkey !== undefined && nodeParid === undefined) {
+                let basicTaskobj = getTaskListByID(nodeid) || {};
+                if (node.type === 'processControlWaitAny' || node.type === 'processControlWaitAll') {
                     res[nodeid] = {
-                        ...tempproperties,
+                        ...basicTaskobj,
                         ...res[nodeid], //合并outputtask
-                        inputArgs: res[currentNodeId].outputArgs,
-                        outputTask: res[nodeid] ? [...res[nodeid]?.outputTask, parId] : [parId],
-                        parId: templateUniqueId,
+                        outputArgs: res[beConnectedTaskkey].inputArgs,
+                        outputTask: res[nodeid]
+                            ?mergeduplicates( [...res[nodeid]?.outputTask, getUniqueIdBytemplateId(beConnectedParTaskkey)])
+                            : [getUniqueIdBytemplateId(beConnectedParTaskkey)],
+                        parId: topTemplateId,
                     };
-                } else if (item.type === 'task') {
+                } else if (node.type === 'task') {
                     res[nodeid] = {
-                        ...tempproperties,
+                        ...basicTaskobj,
                         ...res[nodeid], //合并outputtask
-                        outputTask: res[nodeid] ? [...res[nodeid]?.outputTask, parId] : [parId],
-                        parId: templateUniqueId,
+                        outputTask: res[nodeid]
+                            ? mergeduplicates([...res[nodeid]?.outputTask, getUniqueIdBytemplateId(beConnectedParTaskkey)])
+                            : [getUniqueIdBytemplateId(beConnectedParTaskkey)],
+                        parId: topTemplateId,
                     };
                 }
             }
-            makeTaskOutputTaskConnection({ currentNode: item, currentNodeId: nodeid, data, res });
+            makeTaskOutputTaskConnection({ beConnectedNode: node, data, res });
         }
     });
 }
 
-export function graphRenderData2TaskList(data: { nodes: any; edges: any; templateUniqueId: string }) {
-    let res: { [id: string]: template | basicTaskDefine } = getAllTaskList();
+export function graphRenderData2TaskList(data: { nodes: any; edges: any; topTemplateId: string }) {
+    let res: { [id: string]: template | templateTaskDefine | basicTaskDefine } = getAllTaskList();
+    debugger;
     data = data || tempGraphrenderData;
     const { sourceNodes, targetNodes } = getAllSourceAndTargetNodes(data);
+    // 新增当前模板的字模板对象
+    addChildTemplateInstance();
     debugger;
     graphdataobj2templatestructurefromStart(data, res, sourceNodes);
     graphdataobj2templatestructurefromEnd(data, res, targetNodes);
@@ -382,3 +440,77 @@ export const old2newgraphRenderData = (oldgraphData: { nodes: any; edges: any },
     }
     return { newnodes: realnewnodes, edges };
 };
+function addChildTemplateInstance() {
+    const allTaskList = getAllTaskList();
+    for (let uniqueid in allTaskList) {
+        if (allTaskList[uniqueid].memoChildren) {
+            addTemplateInstance(allTaskList[uniqueid].id);
+        }
+    }
+}
+function getUniqueIdBynode(node: BaseNodeModel) {
+    return `${node.properties.id}_${node.properties.instanceId}`;
+}
+function genResTaskobj(obj: templateTaskDefine | basicTaskDefine | processControlDefine) {
+    const { id, instanceId, handleType, inputTask, outputTask, parId, inputArgs, outputArgs, inputhandlArg, outputhandlArg, handle } = obj;
+    if (handleType == 'templateGroup') {
+        return {
+            id,
+            instanceId,
+            inputArgs,
+            outputArgs,
+            inputTask,
+            outputTask,
+            handleType: 'templateGroup',
+            handle,
+            parId,
+        };
+    }
+    if (handleType == 'processControlWaitAny' || handleType == 'processControlWaitAll') {
+        return {
+            id,
+            instanceId,
+            inputArgs,
+            outputArgs,
+            inputTask,
+            outputTask,
+            handleType,
+            parId,
+        };
+    }
+    if (handleType === 'task') {
+        return {
+            id,
+            instanceId,
+            outputhandlArg,
+            inputhandlArg,
+            inputArgs,
+            outputArgs,
+            inputTask,
+            outputTask,
+            handleType: 'task',
+            handle,
+            parId,
+        };
+    }
+    return {
+        id,
+        instanceId,
+        outputhandlArg,
+        inputhandlArg,
+        inputArgs,
+        outputArgs,
+        inputTask,
+        outputTask,
+        handleType: 'task',
+        handle,
+        parId,
+    };
+}
+function getUniqueIdBytemplateId(id: string | number) {
+    let instanceId = getTemplateInstanceId(id);
+    return `${id}_${instanceId}`;
+}
+function mergeduplicates(arr:any[]){
+    return [...new Set(arr)]
+}

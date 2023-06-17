@@ -1,23 +1,26 @@
 import LogicFlow, { BaseNodeModel } from '@logicflow/core';
-import { getTemplateId, getTemplateInstanceId } from '../genTypeObj';
+import { addAndgetTemplateId } from '../genTypeObj';
 import { graphRenderData2TaskList } from './graphdata';
 import { initialRes } from './initialData';
 import { selectAreadata2graphRenderData } from './selectAreadata';
-import { basicTaskDefine, template } from '../../define';
+import { basicTaskDefine, template, templateTaskDefine } from '../../define';
 
 export const getAllTemplatedata = () => {
-    return Object.values(getAllTaskList()).filter((task) => task.handleType == 'templateGroup');
+    return Object.values(getAllTaskList()).filter((task) => task.handleType == 'templateGroup' && task.instanceId == undefined);
 };
 const initialTaskList = () => {
     if (!localStorage.getItem('allTaskList')) {
         localStorage.setItem('allTaskList', JSON.stringify(initialRes));
     }
     let allTaskList = JSON.parse(localStorage.getItem('allTaskList') || '{}');
-    for (let key in allTaskList) {
-        allTaskList[key].gen = false;
-    }
+    const updateTaskList = () => {
+        for (let key in allTaskList) {
+            allTaskList[key].gen = false;
+        }
+    };
+    updateTaskList();
     // addTemplatestructure记录所有模板的所有信息
-    const addTaskList = (res: { [id: string]: template | basicTaskDefine }) => {
+    const addTaskList = (res: { [id: string]: template | basicTaskDefine | templateTaskDefine }) => {
         allTaskList = { ...allTaskList, ...res };
         localStorage.setItem('allTaskList', JSON.stringify(allTaskList));
     };
@@ -31,9 +34,10 @@ const initialTaskList = () => {
         addTaskList,
         getTaskListByID,
         getAllTaskList,
+        updateTaskList,
     };
 };
-export const { addTaskList, getTaskListByID, getAllTaskList } = initialTaskList();
+export const { addTaskList, getTaskListByID, getAllTaskList, updateTaskList } = initialTaskList();
 export function addParProperty(graphRenderData: { nodes: any; edges: any }) {
     let { nodes, edges } = graphRenderData;
     for (let node of nodes) {
@@ -47,17 +51,17 @@ export function addParProperty(graphRenderData: { nodes: any; edges: any }) {
     return { nodes, edges };
 }
 export function addTemplatedata(NodeData: any, { doc = 'test', briefName = 'llll' }: { doc: any; briefName: any }) {
-    let id = getTemplateId();
-    let instanceId = getTemplateInstanceId(parseInt(id));
-    let templateUniqueId = `${id}_${instanceId}`;
+    let id = addAndgetTemplateId();
     let graphRenderData = Array.isArray(NodeData) ? selectAreadata2graphRenderData(NodeData) : NodeData;
-    graphRenderData = addParProperty(graphRenderData);
-    const { currentTaskList, firstTasks } = graphRenderData2TaskList({ ...graphRenderData, templateUniqueId }); //得到res以id为键的对象
+    // graphRenderData = addParProperty(graphRenderData);
+    const { currentTaskList, firstTasks } = graphRenderData2TaskList({ ...graphRenderData, topTemplateId: id }); //得到res以id为键的对象
     addTaskList(currentTaskList);
     // const firstTasks = Object.values(currentTaskList).filter((item) => item.inputTask?.length === 0||Object.keys(item.inputTask)===0);
     // const endTasks = Object.values(currentTaskList).filter((item) => item.inputTask?.length === 0||Object.keys(item.inputTask)===0);
     // const inputArgs = firstTasks.map((item) => item?.inputArgs||Object.values(item));
-    const memoChildren=Object.values(currentTaskList).filter(task=>task.parId===templateUniqueId).map(task=>getUniqueId(task))
+    const memoChildren = Object.values(currentTaskList)
+        .filter((task) => task.parId === id)
+        .map((task) => getUniqueId(task));
     const handle: any[] = [];
     firstTasks.forEach((node: { properties: { id: any; instanceId: any } }) =>
         handle.push(`${node.properties.id}_${node.properties.instanceId}`)
@@ -65,22 +69,15 @@ export function addTemplatedata(NodeData: any, { doc = 'test', briefName = 'llll
     // const outputArgs = endTasks.map((item) => item.outputArgs);
     let templateobj: template = {
         id,
-        instanceId,
         doc,
         briefName,
-        // inputArgs,
-        // outputArgs,
         handleType: 'templateGroup',
         handle: handle,
-        inputTask: {},
-        outputTask: {},
         statusId: '',
         status: '',
-        parId: '',
-        gen: false,
-        memoChildren:memoChildren
+        memoChildren: memoChildren,
     };
-    addTaskList({ [templateUniqueId]: templateobj, ...currentTaskList });
+    addTaskList({ [id]: templateobj });
     return templateobj;
 }
 let x = 0,
@@ -109,6 +106,7 @@ function generateTemplateGraph({
     AlreadyNodes: BaseNodeModel[];
 }) {
     // 找到模板的开始节点
+    updateTaskList();
     const { handle } = templateobj;
     const startTasks: (basicTaskDefine | template)[] = handle.map((id: string | number) => getTaskListByID(id));
     // 生成开始节点
@@ -121,7 +119,7 @@ function generateTemplateGraph({
     });
     // genGroup(AlreadyNodes, templateobj, LFinstance);
 }
-function getUniqueId(task: basicTaskDefine | template) {
+function getUniqueId(task: basicTaskDefine | templateTaskDefine) {
     return `${task.id}_${task.instanceId}`;
 }
 function generateGraphFromSingleNode(startTask: basicTaskDefine, LFinstance: LogicFlow, AlreadyNodes: BaseNodeModel[]) {
@@ -142,9 +140,10 @@ function generateGraphFromSingleNode(startTask: basicTaskDefine, LFinstance: Log
 
     let outputTasks: string[] = [];
     let ParTask = getTaskListByID(startTask.parId);
-    if (startTask.outputTask.length > 0) {
+
+    if (startTask.outputTask?.length > 0) {
         outputTasks = startTask.outputTask;
-    } else if (Object.keys(getTaskListByID(startTask.parId).outputTask).length > 0) {
+    } else if (ParTask && ParTask.outputTask && Object.keys(ParTask.outputTask).length > 0) {
         // 如果group有输出任务
         const groupTask = getTaskListByID(startTask.parId);
         const tempOutputTasks = [];
@@ -159,22 +158,54 @@ function generateGraphFromSingleNode(startTask: basicTaskDefine, LFinstance: Log
             if (flag) {
                 genGroup(AlreadyNodes, ParTask, LFinstance);
                 ParTask.gen = true;
+                let temp = { ...ParTask };
+                ParTask = null;
+                let res = getAllTaskList();
+                for (let key in res) {
+                    if (Array.isArray(res[key].memoChildren)) {
+                        for (let item of res[key].memoChildren) {
+                            if (item.split('_')[0] === temp.id) {
+                                ParTask = getTaskListByID(res[key].id);
+                                break;
+                            }
+                        }
+                    }
+                }
             }
         }
     } else if (ParTask) {
         // 如果group没有输出任务
-        debugger
-        while (ParTask&&!ParTask.gen) {
+        while (ParTask && !ParTask.gen) {
             let flag = false;
             if (!ParTask.memoChildren) {
                 flag = true;
             } else {
-                flag = ParTask.memoChildren.every((id: string | number) => getTaskListByID(id).gen);
+                debugger;
+                flag = ParTask.memoChildren.every((id: string) => {
+                    if (getTaskListByID(id.split('_')[0])?.memoChildren) {
+                        return getTaskListByID(id.split('_')[0]).gen;
+                    } else {
+                        return getTaskListByID(id).gen;
+                    }
+                });
             }
             if (flag) {
                 genGroup(AlreadyNodes, ParTask, LFinstance);
                 ParTask.gen = true;
-                ParTask = getTaskListByID(ParTask.parId);
+                let temp = { ...ParTask };
+                ParTask = null;
+                let res = getAllTaskList();
+                debugger;
+                for (let key in res) {
+                    if (Array.isArray(res[key].memoChildren)) {
+                        for (let item of res[key].memoChildren) {
+                            if (item.split('_')[0] === temp.id) {
+                                ParTask = getTaskListByID(res[key].id);
+                                break;
+                            }
+                        }
+                    }
+                }
             } else {
                 break;
             }
@@ -194,11 +225,12 @@ function generateGraphFromOutputTask(
         if (outputTask.handleType === 'templateGroup') {
             const tempOutputTasks = [];
             for (let id in outputTask.inputTask) {
-                if (outputTask.inputTask[id] === getUniqueId(startTask)) {
+                if (outputTask.inputTask[id].indexOf(getUniqueId(startTask)) > -1) {
                     tempOutputTasks.push(id);
                 }
             }
             generateGraphFromOutputTask(startNode, startTask, tempOutputTasks, LFinstance, AlreadyNodes);
+            return
         }
         let outputNewnode: BaseNodeModel | undefined;
         if (!outputTask.gen) {
@@ -208,7 +240,7 @@ function generateGraphFromOutputTask(
                 y,
                 properties: { ...outputTask },
             });
-            Increasex();
+            IncreaseY();
             AlreadyNodes.push(outputNewnode);
             outputTask.gen = true;
         } else {
@@ -224,25 +256,35 @@ function generateGraphFromOutputTask(
     });
 }
 function genGroup(AlreadyNodes: any[], templateobj: template | basicTaskDefine, LFinstance: LogicFlow) {
-    debugger
-    console.log(LFinstance.getGraphData())
-    LFinstance.render(LFinstance.getGraphData());
-    console.log(LFinstance.getGraphData())
-    const children = AlreadyNodes.filter((node: { properties: { parId: any } }) => {
-        const parNodeId = node.properties.parId;
-        return parNodeId === getUniqueId(templateobj);
+    debugger;
+    const children = AlreadyNodes.filter((node: BaseNodeModel ) => {
+        let parNodeId = node.properties.parId;
+        if(!parNodeId){
+            let res=getAllTaskList()
+            for(let key in res){
+                debugger
+                if(key!==node.properties.id&&key.split('_')[0]===node.properties.id){
+                    return true
+                }
+            }
+        }
+        return parNodeId === templateobj.id;
     });
     const childrenIds = children.map((child) => child.id);
     const groupElem = {
         type: 'templateGroup',
-        x: x,
-        y: y,
+        x: groupx,
+        y: groupy,
         children: childrenIds,
         properties: { ...templateobj },
     };
-    Increasex();
+    groupx = groupx + x;
+    groupy = groupx + x;
     const groupNode = LFinstance.addNode(groupElem);
     LFinstance.render(LFinstance.getGraphData());
-    console.log(LFinstance.getGraphData())
+    console.log(LFinstance.getGraphData());
     AlreadyNodes.push(groupNode);
 }
+let groupx = 100,
+    groupy = 100;
+

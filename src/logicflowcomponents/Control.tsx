@@ -50,6 +50,7 @@ export default function Control({ LFinstanceobj }: { LFinstanceobj: LogicFlow | 
         // let { newnodes } = old2newgraphRenderData(item.graphRenderData,LFinstanceobj);
         if (!LFinstanceobj) return;
         // generateTemplateGraph({templateobj:item,LFinstance:LFinstanceobj})
+        debugger
         generateGraph(item, LFinstanceobj);
         LFinstanceobj.render(LFinstanceobj?.getGraphData());
     }

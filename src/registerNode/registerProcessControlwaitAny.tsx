@@ -17,7 +17,6 @@ export default function getregisterProcessControlWaitAnyobj(lf: LogicFlow) {
             const style = super.getNodeStyle();
             style.fill = 'green';
             style.strokeWidth = 1;
-           
             return style;
         }
     }

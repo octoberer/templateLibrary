@@ -78,7 +78,6 @@ export default function TaskUI({ loginflowInstance }: { loginflowInstance: Logic
 
     const onFinish = () => {
         setEditstatus('success');
-        debugger
         const Taskobj = {
             id: getBasicTaskId(selectmethod) + '',
             instanceId: getTaskinstanceId(selectmethod) + '',
@@ -95,6 +94,19 @@ export default function TaskUI({ loginflowInstance }: { loginflowInstance: Logic
     };
     const onFinishFailed = () => {
         setEditstatus('error');
+        const Taskobj = {
+            id: getBasicTaskId('add') + '',
+            instanceId: getTaskinstanceId('add') + '',
+            outputhandlArg: [],
+            inputhandlArg: [],
+            inputArgs: [],
+            outputArgs: [],
+            handle: 'add',
+            handleType: 'task',
+            inputTask:[],
+            outputTask:[]
+        };
+        loginflowInstanceref.current.setProperties(clickNode.current.id, Taskobj);
     };
     const inputparamNames = useMemo(() => inputparams.map((item) => item.name), [inputparams]);
     const outputparamNames = useMemo(() => outputparams.map((item) => item.name), [outputparams]);

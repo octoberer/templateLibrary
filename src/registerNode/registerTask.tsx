@@ -63,6 +63,7 @@ export default function getregisterTaskobj(lf: LogicFlow) {
                 this.isMounted = true;
                 const root = ReactDOM.createRoot(rootEl);
                 if(properties.handle){
+                    // root.render(<div style={{background:'green',height:'inherit'}}> 一个盒子</div>)
                     root.render(<FinishedTaskUI properties={properties}> </FinishedTaskUI>)
                 }
                 else{

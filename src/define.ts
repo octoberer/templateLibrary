@@ -99,7 +99,7 @@ interface TaskIOArg {
 interface TaskBindArgs {
     [paramsName: string]: TaskIOArg;
 }
-type templateId=string
+type templateId = string;
 export interface basicTaskDefine {
     id: string;
     instanceId: string; //运用改任务计算方式的一个
@@ -111,8 +111,8 @@ export interface basicTaskDefine {
     outputTask: templateIdOrbasicTaskId[];
     handleType: 'task';
     handle: string; //输入、参数作为handle的输入，输出会赋值给output所有的输入,如果是componentDefine的id，则调用对应处理器，如果是基础组件如add，则使用基础运算
-    parId:templateId,
-    gen:boolean
+    parId: templateId;
+    gen?: boolean;
 }
 //============模板相关
 interface EditHandlArgsdefine {
@@ -133,16 +133,25 @@ export interface IdBind {
 interface templateInputArgs {
     [taskId: string]: TaskBindArgs;
 }
-interface templateTask{
+interface templateTask {
     //以模板内部被链接的任务id为建，值为被链接的外部任务的id
-    [templateIdOrbasicTaskId:string]:templateIdOrbasicTaskId[]
+    [templateIdOrbasicTaskId: string]: templateIdOrbasicTaskId[];
 }
 export interface template {
     id: string; //当前解析器模板的唯一id
-    instanceId: string; //当前解析器唯一id-+
     doc: string; //文档markdown格式，到时候用一个markdown解析器来显示
     briefName: string;
     componentArg?: templateComponentArgDefine; //模板组件的配置参数
+    statusId: string; //前端通过状态id查找对应的状态卡片，id->ui，需要手动编写各种组建的状态卡片，这个需求应该挺少，一般顶层组件可能需要
+    status: string; //状态卡片的参数，从输入输出和配置项拿，会不断地传给子节点，去丰富状态，json字符串，如果是业务系统中非配置页面，则只展示状态卡片
+    handleType: 'templateGroup';
+    handle: templateIdOrbasicTaskId[]; //输入、参数作为handle的输入，输出会赋值给output所有的输入,如果是componentDefine的id，则调用对应处理器，如果是基础组件如add，则使用基础运算
+    // graphRenderData: { nodes: nodedefine[]; edges: edgeDefine[] };
+    memoChildren: templateIdOrbasicTaskId[];
+}
+export interface templateTaskDefine {
+    id: string; //当前解析器模板的唯一id
+    instanceId: string; //当前解析器唯一id-+
     inputArgs?: templateInputArgs;
     outputArgs?: templateInputArgs;
     inputTask: templateTask;
@@ -151,23 +160,8 @@ export interface template {
     status: string; //状态卡片的参数，从输入输出和配置项拿，会不断地传给子节点，去丰富状态，json字符串，如果是业务系统中非配置页面，则只展示状态卡片
     handleType: 'templateGroup';
     handle: templateIdOrbasicTaskId[]; //输入、参数作为handle的输入，输出会赋值给output所有的输入,如果是componentDefine的id，则调用对应处理器，如果是基础组件如add，则使用基础运算
-    // graphRenderData: { nodes: nodedefine[]; edges: edgeDefine[] };
-    parId:templateId,
-    gen:boolean,
-    memoChildren:templateIdOrbasicTaskId[]
-}
-interface nodedefine{
-    id?:string,
-    nodeType:'task'|'templateGroup'|'processControlWaitAny'|'processControlWaitAll',
-    x:number,
-    y:number,
-    width:number,
-    height:number
-}
-interface edgeDefine{
-    id?:string,
-    sourceNodeID:number,
-    targetNodeId:number
+    parId: templateId;
+    gen?: boolean;
 }
 export interface processControlDefine {
     id: string;
@@ -176,9 +170,10 @@ export interface processControlDefine {
     outputArgs: TaskBindArgs;
     inputTask: basicTaskId[];
     outputTask: basicTaskId[];
-    handle: 'waitany' | 'waitAll';
-    handleType: 'processControlWaitAny'|'processControlWaitAll';
-    parId:templateId
+    handle?: 'waitany' | 'waitAll';
+    handleType: 'processControlWaitAny' | 'processControlWaitAll';
+    parId: templateId;
+    gen?: boolean;
 }
-type templateIdOrbasicTaskId=string
-type basicTaskId=string
+type templateIdOrbasicTaskId = string;
+type basicTaskId = string;

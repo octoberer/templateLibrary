@@ -1,4 +1,4 @@
-import { getProcessControlTaskId, getTemplateId, getTemplateInstanceId } from '../tools/genTypeObj';
+import { addAndgetProcessControlId, addAndgetTemplateId, addProcessControlObj,  getProcessControlObj,  getTemplateInstanceId } from '../tools/genTypeObj';
 import styles from './Nodepanel.module.css';
 import LogicFlow from '@logicflow/core';
 
@@ -19,12 +19,14 @@ export default function NodePanel({ nodeList, LFinstanceobj }: nodeListType) {
             LFinstanceobj.extension.selectionSelect.openSelectionSelect();
             return;
         }
-        if (item.type == 'processControlWaitAny' || item.type == 'processControlWaitAll') {
+        else if (item.type == 'processControlWaitAny' || item.type == 'processControlWaitAll') {
+            let id=addAndgetProcessControlId(item.type)
+            addProcessControlObj(id)
             LFinstanceobj.dnd.startDrag({
                 type: item.type,
                 properties: {
-                    id: getProcessControlTaskId(item.type),
-                    instanceId: 0,
+                    id: id+'',
+                    instanceId: getProcessControlObj(id),
                     handleType: 'processControl',
                     handle: item.type,
                     outputTask:[],
@@ -32,8 +34,8 @@ export default function NodePanel({ nodeList, LFinstanceobj }: nodeListType) {
                 },
             });
         }
-        if(item.type =='templateGroup') {
-            let id=getTemplateId()
+        else if(item.type =='templateGroup') {
+            let id=addAndgetTemplateId()
             LFinstanceobj.dnd.startDrag({
                 type: item.type,
                 properties: {
