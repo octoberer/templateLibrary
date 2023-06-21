@@ -79,16 +79,11 @@ export default function TaskUI({ loginflowInstance }: { loginflowInstance: Logic
     const onFinish = () => {
         setEditstatus('success');
         const Taskobj = {
-            id: getBasicTaskId(selectmethod) + '',
-            instanceId: getTaskinstanceId(selectmethod) + '',
             outputhandlArg: HandleData.output,
             inputhandlArg: HandleData.input,
             inputArgs: inputparams.map((inputparam) => getTaskIOArg({ param: inputparam.name, doc: inputparam.doc })),
             outputArgs: outputparams.map((outputparam) => getTaskIOArg({ param: outputparam.name, doc: '' })),
             handle: selectmethod,
-            handleType: 'task',
-            inputTask:[],
-            outputTask:[]
         };
         loginflowInstanceref.current.setProperties(clickNode.current.id, Taskobj);
     };

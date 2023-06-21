@@ -1,47 +1,43 @@
 import { h } from '@logicflow/core';
 import { GroupNode } from '@logicflow/extension';
+import ReactDOM from 'react-dom/client';
+import TaskUI from '../innerComponents/TaskUI';
 export default function getregisterTemplateGroupObj(lf: LogicFlow) {
     class MyGroup extends GroupNode.view {
-        // private getLabelShape() {
+        // private getEditIcon() {
         //     const { model } = this.props;
-        //     const { x, y, width, height } = model;
-        //     const style = model.getNodeStyle();
-        //     return h(
-        //       "svg",
-        //       {
-        //         x: x - width / 2 + 50,
-        //         y: y - height / 2 +  50,
-        //         width: 25,
-        //         height: 25,
-        //         viewBox: "0 0 1274 1024"
-        //       },
-        //       h("path", {
-        //         fill: style.stroke,
-        //         d:
-        //           "M655.807326 287.35973m-223.989415 0a218.879 218.879 0 1 0 447.978829 0 218.879 218.879 0 1 0-447.978829 0ZM1039.955839 895.482975c-0.490184-212.177424-172.287821-384.030443-384.148513-384.030443-211.862739 0-383.660376 171.85302-384.15056 384.030443L1039.955839 895.482975z"
-        //       })
-        //     );
-        //   }
-        //   /**
-        //    * 完全自定义节点外观方法
-        //    */
-        //   getShape() {
+        //     if (!model.foldable) return null;
+        //     return h('g', {}, [
+        //         h(
+        //             'rect',
+        //             {
+        //                 height: 20,
+        //                 width: 40,
+        //                 rx: 2,
+        //                 ry: 2,
+        //                 strokeWidth: 1,
+        //                 fill: '#F4F5F6',
+        //                 stroke: '#CECECE',
+        //                 cursor: 'pointer',
+        //                 x: model.x - model.width / 2 + 25,
+        //                 y: model.y - model.height / 2 + 5,
+        //                 onClick: () => {
+        //                     console.log('点击了编辑按钮');
+        //                 },
+        //             },
+        //             [h('text', { x: model.x - model.width / 2 + 35, y: model.y - model.height / 2 + 5 }, ['文本内容'])]
+        //         ),
+        //     ]);
+        // }
+        // /**
+        //  * 完全自定义节点外观方法
+        //  */
+        // getShape() {
         //     const { model, graphModel } = this.props;
         //     const { x, y, width, height, radius } = model;
         //     const style = model.getNodeStyle();
-        //     return h("g", {}, [
-        //       h("rect", {
-        //         ...style,
-        //         x: x - width / 2,
-        //         y: y - height / 2,
-        //         rx: radius,
-        //         ry: radius,
-        //         width,
-        //         height
-        //       }),
-        //       this.getLabelShape()
-        //     ]);
-        //   }
+        //     return h('g', {}, [super.getResizeShape()]);
+        // }
     }
 
     class MyGroupModel extends GroupNode.model {
@@ -50,8 +46,8 @@ export default function getregisterTemplateGroupObj(lf: LogicFlow) {
             this.foldable = true;
             this.isRestrict = true;
             this.resizable = true;
-            this.width = 800;
-            this.height = 800;
+            this.width = this.properties.width || 800;
+            this.height = this.properties.height || 800;
             this.foldedWidth = 200;
             this.foldedHeight = 200;
             const noTarget = {
@@ -62,10 +58,15 @@ export default function getregisterTemplateGroupObj(lf: LogicFlow) {
             };
             this.targetRules.push(noTarget);
         }
-        // isAllowAppendIn(nodeData) {
-        //     // 设置只允许custom-rect节点被添加到此分组中
-        //     return nodeData.type === 'no';
-        // }
+        isAllowAppendIn(nodeData) {
+            // 设置只允许custom-rect节点被添加到此分组中
+            let { id, instanceId } = this.getProperties();
+            if (!instanceId) {
+                return nodeData.properties.parId === `${id}`;
+            } else {
+                return nodeData.properties.parId === `${id}_${instanceId}`;
+            }
+        }
         getAddableOutlineStyle() {
             const style = super.getAddableOutlineStyle();
             style.stroke = '#AEAFAE';

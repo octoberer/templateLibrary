@@ -330,8 +330,6 @@ export const tempGraphrenderData = {
       type: 'task',
       properties: {
         id: 86,
-        outputTaskKeys: [],
-        inputTaskKeys: [],
         handleType: 'task',
         inputArgs: [],
         outputArgs: [],
@@ -344,8 +342,6 @@ export const tempGraphrenderData = {
       type: 'task',
       properties: {
         id: 87,
-        outputTaskKeys: [],
-        inputTaskKeys: [],
         handleType: 'task',
         inputArgs: [],
         outputArgs: [],
@@ -358,8 +354,6 @@ export const tempGraphrenderData = {
       type: 'task',
       properties: {
         id: 88,
-        outputTaskKeys: [],
-        inputTaskKeys: [],
         handleType: 'task',
         inputArgs: [],
         outputArgs: [],
@@ -376,10 +370,6 @@ export const tempGraphrenderData = {
         id: '100',
         handleType: 'processControlWaitAll',
         handle: 'processControlWaitAll',
-        outputTaskKeys: [],
-        inputTaskKeys: [],
-        inputArgs: [],
-        outputArgs: [],
 
       },
       text: {

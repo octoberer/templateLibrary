@@ -25,10 +25,8 @@ export default function NodePanel({ nodeList, LFinstanceobj }: nodeListType) {
                 type: item.type,
                 properties: {
                     id: id+'',
-                    handleType: 'processControl',
+                    handleType: item.type,
                     handle: item.type,
-                    outputTaskKeys:[],
-                    inputTaskKeys:[]
                 },
             });
         }
@@ -38,8 +36,6 @@ export default function NodePanel({ nodeList, LFinstanceobj }: nodeListType) {
                 properties: {
                     id: addAndgetTaskId() + '',
                     handleType: 'task',
-                    outputTaskKeys:[],
-                    inputTaskKeys:[]
                 },
             });
         }
@@ -52,8 +48,6 @@ export default function NodePanel({ nodeList, LFinstanceobj }: nodeListType) {
                     instanceId: getTemplateInstanceId(id),
                     handleType: 'template',
                     handle: item.type,
-                    outputTaskKeys:[],
-                    inputTaskKeys:[]
                 },
             });
         }
