@@ -1,16 +1,15 @@
 import { Button } from 'antd/es/radio';
-import LogicFlow, { BaseNodeModel } from '@logicflow/core';
+import LogicFlow from '@logicflow/core';
 import { Avatar, Card, Drawer, Modal } from 'antd';
 import { EditOutlined, SettingOutlined } from '@ant-design/icons';
 import { useEffect, useRef, useState } from 'react';
 import Meta from 'antd/es/card/Meta';
-import { Bus } from '../tools/Bus';
-import styles from './Control.module.css';
 import TemplateForm from './templateForm';
-import { generateGraph, graphData2taklist } from '../tools/transformData';
-import { template, templateDefine } from '../define';
-import { getAllTemplatedata } from '../tools/transformData/taskList2Graph';
-import { getTaskListByID } from '../tools/genTypeObj';
+import {  templateDefine } from '../define';
+import { graphdata2tasklist } from '../core/graphdata2tasklist';
+import { getTaskByKey } from '../tools/genTypeObj';
+import { getAllTemplatedata } from '../core/tools';
+import { tasklist2graph } from '../core/tasklist2graph';
 
 export default function Control({ LFinstanceobj }: { LFinstanceobj: LogicFlow | null }) {
     const [allTemplatedata, setAllTemplatedata] = useState<any>([]);
@@ -28,11 +27,11 @@ export default function Control({ LFinstanceobj }: { LFinstanceobj: LogicFlow | 
         setTemplateInformationModalopen(false);
         if (templateOperation.current == 'add') {
             const getGraphData = LFinstanceobj?.getGraphData();
-            graphData2taklist(getGraphData, { ...TemplateMessage.current });
+            graphdata2tasklist(getGraphData, { ...TemplateMessage.current });
         } else if (templateOperation.current == 'update') {
             if (currentTemplateRef.current) {
                 let temptemplate = currentTemplateRef.current;
-                let template = getTaskListByID(temptemplate.id);
+                let template = getTaskByKey(temptemplate.id);
                 template = { ...template, ...TemplateMessage.current };
             }
         }
@@ -41,7 +40,7 @@ export default function Control({ LFinstanceobj }: { LFinstanceobj: LogicFlow | 
         currentTemplateRef.current = currentTemplate;
         if (!LFinstanceobj) return;
         if (currentTemplate) {
-            generateGraph(currentTemplate, LFinstanceobj);
+            tasklist2graph(currentTemplate, LFinstanceobj);
         }
         LFinstanceobj.render(LFinstanceobj?.getGraphData());
     }, [currentTemplate]);

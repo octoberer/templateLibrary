@@ -2,6 +2,8 @@ import { h } from '@logicflow/core';
 import { GroupNode } from '@logicflow/extension';
 import ReactDOM from 'react-dom/client';
 import TaskUI from '../innerComponents/TaskUI';
+import { getTaskByKey } from '../tools/genTypeObj';
+import { getTaskKeyByNode } from '../core/tools';
 export default function getregisterTemplateGroupObj(lf: LogicFlow) {
     class MyGroup extends GroupNode.view {
         // private getEditIcon() {
@@ -58,14 +60,11 @@ export default function getregisterTemplateGroupObj(lf: LogicFlow) {
             };
             this.targetRules.push(noTarget);
         }
-        isAllowAppendIn(nodeData) {
+        isAllowAppendIn(node) {
             // 设置只允许custom-rect节点被添加到此分组中
-            let { id, instanceId } = this.getProperties();
-            if (!instanceId) {
-                return nodeData.properties.parId === `${id}`;
-            } else {
-                return nodeData.properties.parId === `${id}_${instanceId}`;
-            }
+            let { id } = this.getProperties();
+            let templateobj = getTaskByKey(id);
+            return templateobj.memoChildren.indexOf(getTaskKeyByNode(node))>-1;
         }
         getAddableOutlineStyle() {
             const style = super.getAddableOutlineStyle();

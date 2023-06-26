@@ -252,28 +252,26 @@ const initialTaskList = () => {
     }
 
     let allTaskList = JSON.parse(localStorage.getItem('allTaskList') || JSON.stringify(obj));
-    const resettingTaskList = () => {
-        for (let key in allTaskList) {
-            allTaskList[key].gen = false;
-        }
-    };
-    resettingTaskList();
     // addTemplatestructure记录所有模板的所有信息
     const addTaskList = (res: { [id: string]: template | basicTaskDefine | templateTaskDefine }) => {
         allTaskList = { ...allTaskList, ...res };
         localStorage.setItem('allTaskList', JSON.stringify(allTaskList));
     };
-    const getTaskListByID = (id: string | number) => {
-        if (allTaskList) return allTaskList[id];
+    const getTaskByKey = (key: string | number) => {
+        if (allTaskList) return allTaskList[key];
     };
     const getAllTaskList = () => {
         if (allTaskList) return allTaskList;
     };
+    const updateTaskByKey=(key,newTask)=>{
+        allTaskList[key]=newTask
+        localStorage.setItem('allTaskList', JSON.stringify(allTaskList));
+    }
     return {
         addTaskList,
-        getTaskListByID,
+        getTaskByKey,
+        updateTaskByKey,
         getAllTaskList,
-        resettingTaskList,
     };
 };
-export const { addTaskList, getTaskListByID, getAllTaskList, resettingTaskList } = initialTaskList();
+export const { addTaskList, getTaskByKey, getAllTaskList,updateTaskByKey } = initialTaskList();

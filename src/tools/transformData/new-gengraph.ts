@@ -3,36 +3,36 @@ import {
     basicTaskDefine,
     basicTaskInstanceDefine,
     processControlDefine,
-    processControlInstanceDefine,
+    processControlTaskDefine,
     templateConnectTaskObjDefine,
     templateDefine,
     templateTaskDefine,
 } from '../../define';
-import { getTaskListByID } from '../genTypeObj';
-import { getUniqueIdBytask } from './taskList2Graph';
+import { getTaskByKey } from '../genTypeObj';
+import { getTaskKeyByTemplate } from '../../core/tools';
 const padding = 20;
 
-export function generateGraph(template:templateDefine, LFinstance: LogicFlow) {
+export function generateGraph(template: templateDefine, LFinstance: LogicFlow) {
     debugger;
     const obj: { [key: string]: string } = {};
     const Position = { left: 0, right: 0, top: 0, bottom: 0 };
     const { handle } = template;
-    const { x: initialX, y: initialY } = getTaskListByID(handle[0]);
+    const { x: initialX, y: initialY } = getTaskByKey(handle[0]);
     (Position.left = initialX), (Position.right = initialX);
     (Position.top = initialY), (Position.bottom = initialY);
 
     const currentChilrenNodes: BaseNodeModel[] = [];
     const taskchildren = template.memoChildren.map((key: string) => {
         return {
-            ontology: getTaskListByID(key.split('_')[0]),
-            instance: getTaskListByID(key),
+            ontology: getTaskByKey(key.split('_')[0]),
+            instance: getTaskByKey(key),
         };
     }) as {
         ontology: basicTaskDefine | templateDefine | processControlDefine;
-        instance: basicTaskInstanceDefine | processControlInstanceDefine|templateTaskDefine;
+        instance: basicTaskInstanceDefine | processControlTaskDefine | templateTaskDefine;
     }[];
     taskchildren.forEach(({ ontology, instance }) => {
-        const { handleType } = getTaskListByID(ontology.id);
+        const { handleType } = getTaskByKey(ontology.id);
         if (handleType === 'templateGroup') {
             const groupNode = generateGoup(instance, LFinstance, obj, Position);
             currentChilrenNodes.push(groupNode);
@@ -41,9 +41,6 @@ export function generateGraph(template:templateDefine, LFinstance: LogicFlow) {
             currentChilrenNodes.push(node);
         }
     });
-    // 生成一个组
-    // 找到最左侧的位置
-
     genGroupFromNodes(template, currentChilrenNodes, LFinstance, obj, Position, true);
     // 加边,遍历孩子节点的所有outputask,生成边
     genGroupEdgs(taskchildren, LFinstance, obj);
@@ -54,7 +51,7 @@ function genBasicNode(
     obj: { [x: string]: string },
     Position: { left: any; right: any; top: any; bottom: any }
 ) {
-    const ontology = getTaskListByID(instance.id);
+    const ontology = getTaskByKey(instance.id);
     const node = LFinstance.addNode({
         type: ontology.handleType,
         x: instance.x || 0,
@@ -72,7 +69,7 @@ function genBasicNode(
     Position.top = Position.top > temp2 ? temp2 : Position.top;
     Position.bottom = Position.bottom < temp2 ? temp2 : Position.bottom;
 
-    obj[getUniqueIdBytask(instance)] = node.id;
+    obj[getTaskKeyByTemplate(instance)] = node.id;
     return node;
 }
 function genGroupFromNodes(
@@ -110,7 +107,7 @@ function genGroupFromNodes(
     console.log(LFinstance.getGraphData());
     console.log(LFinstance.render(LFinstance.getGraphData()));
     const groupNode = LFinstance.addNode(groupElem);
-    obj[getUniqueIdBytask(properties)] = groupNode.id;
+    obj[getTaskKeyByTemplate(properties)] = groupNode.id;
     return groupNode;
 }
 function genGroupEdgs(taskchildren: { ontology: any; instance: any }[], LFinstance: LogicFlow, obj: { [x: string]: any }) {
@@ -119,17 +116,17 @@ function genGroupEdgs(taskchildren: { ontology: any; instance: any }[], LFinstan
         if (ontology.handleType != 'templateGroup') {
             instance.outputTaskKeys.forEach((relationobj: string) => {
                 const { source, target } = relationobj as unknown as templateConnectTaskObjDefine;
-                const targetTask = getTaskListByID(target.split('_')[0]);
+                const targetTask = getTaskByKey(target.split('_')[0]);
                 if (targetTask.handleType != 'templateGroup') {
                     // 单节点对单节点
-                    debugger
+                    debugger;
                     LFinstance.addEdge({
                         sourceNodeId: obj[source],
                         targetNodeId: obj[target],
                     });
                 } else {
                     // 单节点对group
-                    const sourceTaskkey = getUniqueIdBytask(instance);
+                    const sourceTaskkey = getTaskKeyByTemplate(instance);
                     const targetrelationTask = targetTask.inputTaskKeys.filter((relationobj) => {
                         const { source } = relationobj as templateConnectTaskObjDefine;
                         if (source === sourceTaskkey) {
@@ -148,12 +145,12 @@ function genGroupEdgs(taskchildren: { ontology: any; instance: any }[], LFinstan
         } else {
             instance.outputTaskKeys.forEach((relationobj: string) => {
                 const { source, target } = relationobj as unknown as templateConnectTaskObjDefine;
-                const targetTask = getTaskListByID(target.split('_')[0]);
+                const targetTask = getTaskByKey(target.split('_')[0]);
                 if (targetTask.handleType != 'templateGroup') {
                     // group对应task
                     // 找到源节点的真实节点
-                    const sourceTaskkey = getUniqueIdBytask(instance);
-                    const sourceTask = getTaskListByID(sourceTaskkey);
+                    const sourceTaskkey = getTaskKeyByTemplate(instance);
+                    const sourceTask = getTaskByKey(sourceTaskkey);
                     const sourceTaskIds = sourceTask.outputTaskKeys.filter((relationobj2) => {
                         const { target: target2 } = relationobj2 as templateConnectTaskObjDefine;
                         if (target2 === target) {
@@ -169,10 +166,10 @@ function genGroupEdgs(taskchildren: { ontology: any; instance: any }[], LFinstan
                     });
                 } else {
                     // group对group
-                    const sourceTask = getTaskListByID(source);
+                    const sourceTask = getTaskByKey(source);
                     const sourceTaskKeys = sourceTask.outputTaskKeys.filter((relationobj) => {
                         const { target } = relationobj as templateConnectTaskObjDefine;
-                        const targetTemplateTask = getTaskListByID(targetId);
+                        const targetTemplateTask = getTaskByKey(targetId);
                         const targetIds = targetTemplateTask.inputTaskKeys.map((obj) => obj.target);
                         if (targetIds.indexOf(target) >= 0) {
                             return true;
@@ -191,25 +188,30 @@ function genGroupEdgs(taskchildren: { ontology: any; instance: any }[], LFinstan
         }
     });
 }
-function generateGoup(templateInstance: templateTaskDefine, LFinstance: LogicFlow, obj: { [key: string]: string }, Position: { left: any; right: any; top: any; bottom: any; }) {
-    debugger
+function generateGoup(
+    templateInstance: templateTaskDefine,
+    LFinstance: LogicFlow,
+    obj: { [key: string]: string },
+    Position: { left: any; right: any; top: any; bottom: any }
+) {
+    debugger;
     const currentChilrenNodes: BaseNodeModel[] = [];
     const currentPosition = { left: 0, right: 0, top: 0, bottom: 0 };
-    const { handle } = getTaskListByID(templateInstance.id);
-    const { x: initialX, y: initialY } = getTaskListByID(handle[0]);
+    const { handle } = getTaskByKey(templateInstance.id);
+    const { x: initialX, y: initialY } = getTaskByKey(handle[0]);
     (currentPosition.left = initialX), (currentPosition.right = initialX);
     (currentPosition.top = initialY), (currentPosition.bottom = initialY);
     const taskchildren = templateInstance.memoChildren.map((key: string) => {
         return {
-            ontology: getTaskListByID(key.split('_')[0]),
-            instance: getTaskListByID(key),
+            ontology: getTaskByKey(key.split('_')[0]),
+            instance: getTaskByKey(key),
         };
     }) as {
         ontology: basicTaskDefine | templateDefine | processControlDefine;
-        instance: basicTaskInstanceDefine  | processControlInstanceDefine|templateTaskDefine;
+        instance: basicTaskInstanceDefine | processControlTaskDefine | templateTaskDefine;
     }[];
     taskchildren.forEach(({ ontology, instance }) => {
-        const { handleType } = getTaskListByID(ontology.id);
+        const { handleType } = getTaskByKey(ontology.id);
         if (handleType === 'templateGroup') {
             const groupNode = generateGoup(instance, LFinstance, obj, currentPosition);
             currentChilrenNodes.push(groupNode);
@@ -220,16 +222,16 @@ function generateGoup(templateInstance: templateTaskDefine, LFinstance: LogicFlo
     });
 
     const groupNode = genGroupFromNodes(
-        { ...templateInstance, ...getTaskListByID(templateInstance.id) },
+        { ...templateInstance, ...getTaskByKey(templateInstance.id) },
         currentChilrenNodes,
         LFinstance,
         obj,
         currentPosition,
         true
     );
-    Position.left = Position.left > currentPosition.left ? currentPosition.left-padding : Position.left;
-    Position.right = Position.right <  currentPosition.right ? currentPosition.right : Position.right;
-    Position.top = Position.top >  currentPosition.top ? currentPosition.top-padding  : Position.top;
+    Position.left = Position.left > currentPosition.left ? currentPosition.left - padding : Position.left;
+    Position.right = Position.right < currentPosition.right ? currentPosition.right : Position.right;
+    Position.top = Position.top > currentPosition.top ? currentPosition.top - padding : Position.top;
     Position.bottom = Position.bottom < currentPosition.bottom ? currentPosition.bottom : Position.bottom;
     // 加边,遍历孩子节点的所有outputask,生成边
     genGroupEdgs(taskchildren, LFinstance, obj);

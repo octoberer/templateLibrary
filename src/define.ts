@@ -112,23 +112,17 @@ type templateTaskKeyOrbasicTaskId = string;
 type allTaskKey = basicTaskId | processControlTaskId | templateTaskInstanceKey;
 export interface basicTaskDefine {
     id: string;
+    instanceId: string;
+    inputTaskKeys: templateConnectTaskObjDefine[];
+    outputTaskKeys: templateConnectTaskObjDefine[];
+    x?: number;
+    y?: number;
     handleType: 'task';
     outputhandlArg: handleBindArgs;
     inputhandlArg: handleBindArgs;
     inputArgs: TaskBindArgs;
     outputArgs: TaskBindArgs;
     handle: string; //输入、参数作为handle的输入，输出会赋值给output所有的输入,如果是componentDefine的id，则调用对应处理器，如果是基础组件如add，则使用基础运算
-    parId: templateId;
-}
-export interface basicTaskInstanceDefine {
-    id: string;
-    instanceId: string;
-    inputTaskKeys: templateConnectTaskObjDefine[];
-    outputTaskKeys: templateConnectTaskObjDefine[];
-    parId: templateId;
-    gen?: boolean;
-    x?: number;
-    y?: number;
 }
 //============模板相关
 interface EditHandlArgsdefine {
@@ -146,10 +140,10 @@ interface templateInputArgs {
     [taskId: string]: TaskBindArgs;
 }
 export interface templateConnectTaskObjDefine {
-    source: basicTaskId;
-    sourcerelations: templateTaskId[];
-    target: basicTaskId;
-    targetrelations: templateTaskId[];
+    sourceId: basicTaskId;
+    sourceRelations: templateTaskId[];
+    targetId: basicTaskId;
+    targetRelation: templateTaskId[];
 }
 
 export interface templateDefine {
@@ -162,21 +156,16 @@ export interface templateDefine {
     handleType: 'templateGroup';
     handle: templateTaskKeyOrbasicTaskId[]; //输入、参数作为handle的输入，输出会赋值给output所有的输入,如果是componentDefine的id，则调用对应处理器，如果是基础组件如add，则使用基础运算
     memoChildren: templateTaskKeyOrbasicTaskId[];
-    instancefy?: boolean;
 }
 export interface templateTaskDefine {
-    handle: string[];
     id: string; //当前解析器模板的唯一id
     instanceId: string; //当前解析器唯一id-+
-    parId: string;
     inputTaskKeys: templateConnectTaskObjDefine[];
     outputTaskKeys: templateConnectTaskObjDefine[];
-    memoChildren: string[];
-    gen?: boolean;
-    x: number;
-    y: number;
-    width:number,
-    height:number,
+    x?: number;
+    y?: number;
+    width?: number;
+    height?: number;
 }
 
 export interface processControlDefine {
@@ -184,11 +173,10 @@ export interface processControlDefine {
     handle: 'processControlWaitAny' | 'processControlWaitAll';
     handleType: 'processControlWaitAny' | 'processControlWaitAll';
 }
-export interface processControlInstanceDefine {
+export interface processControlTaskDefine {
     id: string;
     instanceId: string;
     parId: templateId;
-    gen?: boolean;
     inputTaskKeys: templateConnectTaskObjDefine[];
     outputTaskKeys: templateConnectTaskObjDefine[];
     inputArgs: TaskBindArgs;
