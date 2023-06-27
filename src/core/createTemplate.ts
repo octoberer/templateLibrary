@@ -1,5 +1,5 @@
 import { templateDefine } from "../define";
-import { addAndgetTemplateId, addTaskList } from "../tools/genTypeObj";
+import { addAndgetTemplateId, addTaskList } from "../tools/initialData";
 
 export function createTemplate({ doc, briefName },{memoChildren,handle}) {
     const id=addAndgetTemplateId();

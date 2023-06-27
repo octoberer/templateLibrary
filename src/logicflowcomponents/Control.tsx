@@ -7,9 +7,9 @@ import Meta from 'antd/es/card/Meta';
 import TemplateForm from './templateForm';
 import {  templateDefine } from '../define';
 import { graphdata2tasklist } from '../core/graphdata2tasklist';
-import { getTaskByKey } from '../tools/genTypeObj';
 import { getAllTemplatedata } from '../core/tools';
 import { tasklist2graph } from '../core/tasklist2graph';
+import { getTaskByKey } from '../tools/initialData';
 
 export default function Control({ LFinstanceobj }: { LFinstanceobj: LogicFlow | null }) {
     const [allTemplatedata, setAllTemplatedata] = useState<any>([]);
@@ -19,7 +19,6 @@ export default function Control({ LFinstanceobj }: { LFinstanceobj: LogicFlow | 
     const templateOperation = useRef<'add' | 'update'>('add');
     const [currentTemplate, setCurrentTemplate] = useState<templateDefine | null>(null);
     const currentTemplateRef = useRef<templateDefine | null>(null);
-    const saveAsTemplate = () => {};
     const getTemplateMessage = (data) => {
         TemplateMessage.current = data;
     };

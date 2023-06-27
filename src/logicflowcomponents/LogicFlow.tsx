@@ -11,14 +11,12 @@ import {
     getregisterStartobj,
     getregisterTaskobj,
     getregisterTemplateGroupObj,
-    getregisterTemplateObj,
 } from '../registerNode';
-import { tempGraphrenderData } from '../tools/transformData/initialData';
 
 interface LogicFlowCanvaspropsType {
     getLFinstanceobj: (obj: LogicFlow) => void;
 }
-
+// 生成LogicFlow实例，注册业务组件，定义监听事件
 export default function LogicFlowCanvas({ getLFinstanceobj }: LogicFlowCanvaspropsType) {
     const LogicFlowBox = useRef<HTMLDivElement | null>(null);
     const addLfEvent = (LogicFlowobj: LogicFlow) => {
@@ -26,31 +24,15 @@ export default function LogicFlowCanvas({ getLFinstanceobj }: LogicFlowCanvaspro
             Bus.emit('ClickNodeDataUpdate', data);
         });
         LogicFlowobj.on('edge:click', ({ data }) => {
-            console.log('edge:click', data);
+            // console.log('edge:click', data);
         });
         LogicFlowobj.on('element:click', () => {
             //   this.hideAddPanel()
         });
         LogicFlowobj.on('edge:add', ({ data }) => {
-            console.log('edge:add', data);
+            // console.log('edge:add', data);
         });
         LogicFlowobj.on('node:mousemove', ({ data }) => {
-            // if (data.type != 'processControlWaitAny' && data.type != 'processControlWaitAll') {
-            //     return;
-            // }
-            // console.log('node:mousemove');
-            // if (!allProcessComponent[data.id]) {
-            //     currentChoseComponent.nodeId = data.id;
-            //     currentChoseComponent.ComponentType = data.type;
-            //     currentChoseComponent.properties = {
-            //         id: getProcessControlTaskId(data.type),
-            //         instanceId: getTaskinstanceId(data.type) + '',
-            //         handleType: 'processControl',
-            //         handle: data.type,
-            //     };
-            //     allProcessComponent[data.id] = currentChoseComponent;
-            //     LogicFlowobj.setProperties(data.id, currentChoseComponent.properties);
-            // }
         });
         LogicFlowobj.on('blank:click', () => {});
         LogicFlowobj.on('connection:not-allowed', (data) => {});
@@ -82,13 +64,12 @@ export default function LogicFlowCanvas({ getLFinstanceobj }: LogicFlowCanvaspro
             },
         });
         lfinstance.extension.selectionSelect.setSelectionSense(true, false);
-        lfinstance.register(getregisterProcessControlWaitAnyobj(lfinstance));
+        lfinstance.register(getregisterProcessControlWaitAnyobj());
         lfinstance.register(getregisterProcessControlWaitAllobj(lfinstance));
         lfinstance.register(getregisterTaskobj(lfinstance));
         lfinstance.register(getregisterStartobj());
         lfinstance.register(getregisterEndobj());
-        lfinstance.register(getregisterTemplateObj(lfinstance));
-        lfinstance.register(getregisterTemplateGroupObj(lfinstance));
+        lfinstance.register(getregisterTemplateGroupObj());
         lfinstance.setTheme({
             text: {
                 color: 'red',

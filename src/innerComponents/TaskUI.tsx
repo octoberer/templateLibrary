@@ -6,7 +6,7 @@ import TaskHandleComponent from '../taskhandleComponents/TaskHandleComponent';
 import LogicFlow from '@logicflow/core';
 import { Bus } from '../tools/Bus';
 import styles from './TaskUI.module.css';
-import { getBasicTaskId, getTaskinstanceId, getTaskIOArg } from '../tools/genTypeObj';
+import { getTaskIOArg } from '../tools/genTypeObj';
 
 const formItemLayout = {
     labelCol: {
@@ -85,23 +85,10 @@ export default function TaskUI({ loginflowInstance }: { loginflowInstance: Logic
             outputArgs: outputparams.map((outputparam) => getTaskIOArg({ param: outputparam.name, doc: '' })),
             handle: selectmethod,
         };
-        loginflowInstanceref.current.setProperties(clickNode.current.id, Taskobj);
+        loginflowInstanceref.current.setProperties(clickNode.current.id, {...loginflowInstanceref.current.getProperties(clickNode.current.id),...Taskobj});
     };
     const onFinishFailed = () => {
         setEditstatus('error');
-        const Taskobj = {
-            id: getBasicTaskId('add') + '',
-            instanceId: getTaskinstanceId('add') + '',
-            outputhandlArg: [],
-            inputhandlArg: [],
-            inputArgs: [],
-            outputArgs: [],
-            handle: 'add',
-            handleType: 'task',
-            inputTask:[],
-            outputTask:[]
-        };
-        loginflowInstanceref.current.setProperties(clickNode.current.id, Taskobj);
     };
     const inputparamNames = useMemo(() => inputparams.map((item) => item.name), [inputparams]);
     const outputparamNames = useMemo(() => outputparams.map((item) => item.name), [outputparams]);

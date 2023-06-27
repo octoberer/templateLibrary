@@ -1,4 +1,4 @@
-import { addAndgetProcessControlId, addAndgetTaskId, addAndgetTemplateId, addProcessControlObj,  addandGetTaskinstanceId,  getBasicTaskId,  getProcessControlObj,  getTemplateInstanceId } from '../tools/genTypeObj';
+import { addAndgetProcessControlId, addAndgetTaskId, addAndgetTemplateId, addProcessControlObj, addandGetTaskinstanceId, getTemplateInstanceId } from '../tools/initialData';
 import styles from './Nodepanel.module.css';
 import LogicFlow from '@logicflow/core';
 
@@ -11,7 +11,7 @@ interface nodeListType {
     nodeList: nodeType[];
     LFinstanceobj: LogicFlow | null;
 }
-
+// 左侧节点栏
 export default function NodePanel({ nodeList, LFinstanceobj }: nodeListType) {
     const dragNode = (item: nodeType) => {
         if (!LFinstanceobj) return;
@@ -21,10 +21,13 @@ export default function NodePanel({ nodeList, LFinstanceobj }: nodeListType) {
         }
         else if (item.type == 'processControlWaitAny' || item.type == 'processControlWaitAll') {
             let id=addAndgetProcessControlId()
+            let instanceId=addProcessControlObj(id)
+
             LFinstanceobj.dnd.startDrag({
                 type: item.type,
                 properties: {
                     id: id+'',
+                    instanceId,
                     handleType: item.type,
                     handle: item.type,
                     outputTaskKeys:[],

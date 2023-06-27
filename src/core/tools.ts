@@ -1,6 +1,8 @@
-import LogicFlow, { BaseNode, BaseNodeModel } from '@logicflow/core';
-import { basicTaskDefine, basicTaskInstanceDefine, processControlTaskDefine, templateDefine, templateTaskDefine } from '../define';
-import { addTaskList, addandGetTaskinstanceId, addandGetTemplateInstance, getAllTaskList, getTaskByKey } from '../tools/genTypeObj';
+// 转化过程中用到的通用方法
+
+import  { BaseNodeModel } from '@logicflow/core';
+import { basicTaskDefine, processControlTaskDefine, templateDefine, templateTaskDefine } from '../define';
+import { addTaskList, addandGetTemplateInstance, getAllTaskList, getTaskByKey } from '../tools/initialData';
 
 export function separateAllNode(nodes: any[]) {
     let childnodeIDs: any[] = [];
@@ -41,31 +43,32 @@ export const getAllTemplatedata = () => {
     )[];
     return templates.filter((task) => task.handleType == 'templateGroup' && task.instanceId == undefined);
 };
-export const addBasicNodes2Handle = (BasicNodes: BaseNodeModel[], data: { nodes: any; edges: any; topTemplateId?: any; }) => {
-    const {edges,nodes}=data
-    debugger;
+export const addBasicNodes2Handle = (BasicNodes: BaseNodeModel[], data: { nodes: any; edges: any; topTemplateId?: any }) => {
+    const { edges, nodes } = data;
     const handle = [];
     const BasicNodeIds = BasicNodes.map((node) => node.id);
     const BasicNodeObj: { [x: string]: BaseNodeModel } = {};
     BasicNodes.forEach((node) => (BasicNodeObj[node.id] = node));
 
-    const allSourceNodeIds = edges.map((edge) => edge.sourceNodeId);
-    const allTargetNodeIds = edges.map((edge) => edge.targetNodeId);
-    const allBasicSourceNodes: BaseNodeModel[] = nodes.filter((node) => allSourceNodeIds.indexOf(node.id)>-1&&BasicNodeIds.indexOf(node.id)>-1);
-    const allBasicTargetNodes: BaseNodeModel[] = nodes.filter((node) => allTargetNodeIds.indexOf(node.id)>-1&&BasicNodeIds.indexOf(node.id)>-1);
-    const allBasicSourceNodeIds: string[] = allBasicSourceNodes.map((node) => node.id)
-    const allBasicTargetNodeIds: string[] = allBasicTargetNodes.map((node) => node.id)
+    const allSourceNodeIds = edges.map((edge: { sourceNodeId: any; }) => edge.sourceNodeId);
+    const allTargetNodeIds = edges.map((edge: { targetNodeId: any; }) => edge.targetNodeId);
+    const allBasicSourceNodes: BaseNodeModel[] = nodes.filter(
+        (node: BaseNodeModel) => allSourceNodeIds.indexOf(node.id) > -1 && BasicNodeIds.indexOf(node.id) > -1
+    );
+    const allBasicTargetNodes: BaseNodeModel[] = nodes.filter(
+        (node:BaseNodeModel) => allTargetNodeIds.indexOf(node.id) > -1 && BasicNodeIds.indexOf(node.id) > -1
+    );
+    const allBasicSourceNodeIds: string[] = allBasicSourceNodes.map((node) => node.id);
+    const allBasicTargetNodeIds: string[] = allBasicTargetNodes.map((node) => node.id);
 
     for (let nodeid of [...allBasicSourceNodeIds]) {
-        debugger
-        if (allBasicTargetNodeIds.indexOf(nodeid)<0) {
+        if (allBasicTargetNodeIds.indexOf(nodeid) < 0) {
             handle.push(getTaskKeyByNode(BasicNodeObj[nodeid]));
         }
     }
     return handle;
 };
 export const instanceTemplateTask = (template: templateDefine) => {
-    debugger;
     const instanceId = addandGetTemplateInstance(template.id);
     const templateTask: templateTaskDefine = {
         id: template.id,
@@ -77,54 +80,62 @@ export const instanceTemplateTask = (template: templateDefine) => {
     addTaskList({ [key]: templateTask });
     return templateTask;
 };
-export const padding = 20;
+export const padding = 40;
 
-export function genGroupFromNodes(
-    properties: basicTaskInstanceDefine | templateTaskDefine,
-    childrenIds: string[],
-    LFinstance: LogicFlow,
-    Position: { left: any; right: any; top: any; bottom: any },
-    Positionflag: boolean,
-) {
-    let groupElem
-    if (Positionflag) {
-        const width = Position.right - Position.left + 400 + padding * 2;
-        const height = Position.bottom - Position.top + 320;
-        const initialX = (Position.right - Position.left) / 2 + Position.left - padding;
-        const initialY = (Position.bottom - Position.top) / 2 + Position.top;
-        groupElem = {
-            type: 'templateGroup',
-            x: initialX,
-            y: initialY,
-            children: childrenIds,
-            properties: { ...properties, width, height },
-        };
-    } else {
-        groupElem = {
-            type: 'templateGroup',
-            x: properties.x,
-            y: properties.y,
-            children: childrenIds,
-            properties,
-        };
+
+export const getTaskKeyByNodeId = (nodeId: any, nodes: any[]) => {
+    const node = nodes.find((node) => node.id === nodeId);
+    return getTaskKeyByNode(node);
+};
+
+function getTargetNode(sourceNode: BaseNodeModel, data: { nodes: any; edges: any }) {
+    const { nodes, edges } = data;
+    const TargetNodeids: any[] = [];
+    for (let edge of edges) {
+        if (edge.sourceNodeId === sourceNode.id) {
+            TargetNodeids.push(edge.targetNodeId);
+        }
     }
-    const groupNode = LFinstance.addNode(groupElem);
-    return groupNode;
+    return nodes.filter((node: { id: any }) => TargetNodeids.indexOf(node.id) > -1);
 }
-// export const instanceBasicTasks = (BasicNodes) => {
-//     BasicNodes.forEach((Node: BaseNodeModel) => {
-//         const { properties } = Node;
-//         const { id } = properties;
-//         if (!getTaskByKey(id)) {
-//             addTaskList({ [id]: properties });
-//         }
-//         let instanceId = addandGetTaskinstanceId(id);
-//         let taskinstanceObj: basicTaskInstanceDefine = {
-//             ...properties,
-//             instanceId,
-//             outputTaskKeys: [],
-//             inputTaskKeys: [],
-//         };
-//         addTaskList({ [getTaskKeyByTemplate(taskinstanceObj)]: taskinstanceObj });
-//     });
-// };
+function getSourceNode(targetNode: { id: any }, data: { nodes: any; edges: any }) {
+    debugger;
+    const { nodes, edges } = data;
+    const sourceNodeids: any[] = [];
+    for (let edge of edges) {
+        if (edge.targetNodeId === targetNode.id) {
+            sourceNodeids.push(edge.sourceNodeId);
+        }
+    }
+    return nodes.filter((node: { id: any }) => sourceNodeids.indexOf(node.id) > -1);
+}
+export function getNodeBykey(key: string, nodes: BaseNodeModel[]) {
+    return nodes.find((node: BaseNodeModel) => getTaskKeyByNode(node) === key);
+}
+export const isTemplateGroup = (taskKey: string) => {
+    const taskobj = getTaskByKey(taskKey);
+    const ontology = getTaskByKey(taskobj.id);
+    if (ontology && ontology.handleType === 'templateGroup') {
+       return true
+    } else {
+       return false
+    }
+};
+export const getTopNode=(template: templateDefine)=>{
+    const {memoChildren,handle}=template
+    if(memoChildren.indexOf(handle[0])>=0){
+        return handle[0]
+    }
+    else{
+        for(let childrenkey of memoChildren){
+            if(isTemplateGroup(childrenkey)){
+                const res=getTopNode(getTaskByKey(childrenkey.split('_')[0]))
+                if(res){
+                    return childrenkey
+                }
+            }
+        }
+    }
+}
+export const taskWidth=400
+export const taskHeight=250

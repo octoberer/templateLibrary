@@ -1,6 +1,6 @@
 import { DiamondResize } from '@logicflow/extension';
 
-export default function getregisterProcessControlWaitAnyobj(lf: LogicFlow) {
+export default function getregisterProcessControlWaitAnyobj() {
     class ResizableDiamondModel extends DiamondResize.model {
         constructor(data: any, graphModel: any) {
             super(data, graphModel);

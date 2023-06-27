@@ -1,49 +1,12 @@
-import { h } from '@logicflow/core';
 import { GroupNode } from '@logicflow/extension';
-import ReactDOM from 'react-dom/client';
-import TaskUI from '../innerComponents/TaskUI';
-import { getTaskByKey } from '../tools/genTypeObj';
 import { getTaskKeyByNode } from '../core/tools';
-export default function getregisterTemplateGroupObj(lf: LogicFlow) {
-    class MyGroup extends GroupNode.view {
-        // private getEditIcon() {
-        //     const { model } = this.props;
-        //     if (!model.foldable) return null;
-        //     return h('g', {}, [
-        //         h(
-        //             'rect',
-        //             {
-        //                 height: 20,
-        //                 width: 40,
-        //                 rx: 2,
-        //                 ry: 2,
-        //                 strokeWidth: 1,
-        //                 fill: '#F4F5F6',
-        //                 stroke: '#CECECE',
-        //                 cursor: 'pointer',
-        //                 x: model.x - model.width / 2 + 25,
-        //                 y: model.y - model.height / 2 + 5,
-        //                 onClick: () => {
-        //                     console.log('点击了编辑按钮');
-        //                 },
-        //             },
-        //             [h('text', { x: model.x - model.width / 2 + 35, y: model.y - model.height / 2 + 5 }, ['文本内容'])]
-        //         ),
-        //     ]);
-        // }
-        // /**
-        //  * 完全自定义节点外观方法
-        //  */
-        // getShape() {
-        //     const { model, graphModel } = this.props;
-        //     const { x, y, width, height, radius } = model;
-        //     const style = model.getNodeStyle();
-        //     return h('g', {}, [super.getResizeShape()]);
-        // }
-    }
+import { BaseNodeModel } from '@logicflow/core';
+import { getTaskByKey } from '../tools/initialData';
+export default function getregisterTemplateGroupObj() {
+    class MyGroup extends GroupNode.view {}
 
     class MyGroupModel extends GroupNode.model {
-        initNodeData(data) {
+        initNodeData(data: any) {
             super.initNodeData(data);
             this.foldable = true;
             this.isRestrict = true;
@@ -54,17 +17,17 @@ export default function getregisterTemplateGroupObj(lf: LogicFlow) {
             this.foldedHeight = 200;
             const noTarget = {
                 message: '不允许连接分组',
-                validate: (sourceNode, targetNode, sourceAnchor, targetAnchor) => {
+                validate: () => {
                     return false;
                 },
             };
             this.targetRules.push(noTarget);
         }
-        isAllowAppendIn(node) {
-            // 设置只允许custom-rect节点被添加到此分组中
+        isAllowAppendIn(node: BaseNodeModel) {
+            // 设置只允许本来在该组的节点被添加到此分组中
             let { id } = this.getProperties();
             let templateobj = getTaskByKey(id);
-            return templateobj.memoChildren.indexOf(getTaskKeyByNode(node))>-1;
+            return templateobj.memoChildren.indexOf(getTaskKeyByNode(node)) > -1;
         }
         getAddableOutlineStyle() {
             const style = super.getAddableOutlineStyle();

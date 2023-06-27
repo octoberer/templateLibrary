@@ -1,4 +1,5 @@
-import React, { Fragment } from 'react';
+// 已弃用
+
 import styles from './TemplateUI.module.css';
 import { Button } from 'antd';
 export default function TemplateUI({ properties, loginflowInstance }) {

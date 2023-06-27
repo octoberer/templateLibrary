@@ -1,3 +1,4 @@
+// 将logic选区数据转化为图数据
 export function selectAreadata2graphRenderData(selectAreaArray: any[]) {
     let nodes: {
             memoChildren?: any[];

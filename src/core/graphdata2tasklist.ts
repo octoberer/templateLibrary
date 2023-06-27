@@ -1,181 +1,150 @@
-import { BaseNodeModel, GraphModel } from '@logicflow/core';
-import { addBasicNodes2Handle, getTaskKeyByNode, getTaskKeyByTemplate, instanceBasicTasks, separateAllNode } from './tools';
-import { addTaskList, getTaskByKey, updateTaskByKey } from '../tools/genTypeObj';
-import { templateTaskDefine } from '../define';
+import {
+    getNodeBykey,
+    getTaskKeyByNode,
+    getTaskKeyByNodeId,
+    isTemplateGroup,
+    separateAllNode,
+} from './tools';
+import { templateConnectTaskObjDefine } from '../define';
 import { createTemplate } from './createTemplate';
+import { BaseNodeModel } from '@logicflow/core';
+import { addTaskList, getTaskByKey, updateTaskByKey } from '../tools/initialData';
 
 export function graphdata2tasklist(
-    data: { nodes: any; edges: any; topTemplateId: any },
+    data: { nodes: BaseNodeModel[]; edges: any; topTemplateId: any },
     { doc = 'test', briefName = 'llll' }: { doc: any; briefName: any }
 ) {
-    const { nodes, edges } = data;
-    const memoChildren = [];
-    // 记录新的task
-    const templateStack: any[] = [];
-    const { GroupNodes, BasicNodes } = separateAllNode(nodes);
-    const BasicNodeIds = BasicNodes.map((node) => node.id);
-    const BasicNodeObj: { [x: string]: BaseNodeModel } = {};
-    BasicNodes.forEach((node) => (BasicNodeObj[node.id] = node));
-    const BasicNodeKeys = BasicNodes.map((node) => getTaskKeyByNode(node));
-
-    addrelation2BasicTask(BasicNodes, data);
-
-    memoChildren.push(...BasicNodeKeys);
-    const handle = addBasicNodes2Handle(BasicNodes, data);
-    GroupNodes.forEach((GroupNode) => {
-        // 将内部节点的连接关系转移到template的输入输出任务上
-        const topTemplate = GroupNode.properties;
-        addrelation2Template({ GroupNode, data, templateStack, BasicNodeIds, topTemplate });
-        memoChildren.push(getTaskKeyByTemplate(topTemplate));
-        const templateKey = getTaskKeyByTemplate(topTemplate);
-        const task = getTaskByKey(templateKey);
-        if (task.inputTaskKeys.length === 0) {
-            handle.push(getTaskKeyByTemplate(task));
-        }
-    });
+    const { nodes } = data;
+    // 获取模板的Children
+    const memoChildren = getMemoChildren(data);
+    const groups = nodes.filter((node) => node.type === 'templateGroup');
+    // 给每个top层节点更新输入输出任务，不属于top层边的都放到顶层group的输入输出中。（这里假定不允许模板自身内部的边进行增删改，但不同模板的节点可以新增边）
+    addRelationfromEdges(data, groups);
+    // 获取模板的handle属性值
+    const handle = getHandle(memoChildren);
+    // 给每个节点（组和basicTask)的属性添加相对于第一个handle的x,y，第一个handle定义为0，0，后面生成图需要用到这个位置信息
+    initialPositionfromHandle(handle, nodes, groups);
+    // 模板内部信息已经处理完成，可以生成一个模板，并放到模板库
     createTemplate({ doc, briefName }, { memoChildren, handle });
 }
-function addrelation2Template({
-    GroupNode,
-    data,
-    templateStack,
-    BasicNodeIds,
-    topTemplate,
-}: {
-    GroupNode: { properties: any; children: string | string[] };
-    data: { nodes: any; edges: any; topTemplateId?: any };
-    templateStack: any[];
-    BasicNodeIds: any[];
-    topTemplate: templateTaskDefine;
-}) {
+function addRelationfromEdges(data: { nodes: any; edges: any; topTemplateId?: any }, groups: any[]) {
+    // 思路：遍历图的所有边，寻找两个节点的最顶层group,或者节点无父组，分情况为两个节点（如有顶层group，并且不相同，则为其顶层group）分别添加输入输出属性
     const { nodes, edges } = data;
-    const template = GroupNode.properties;
-    templateStack.push(template);
-    const groupchildrenNodes = nodes.filter((nodechild: BaseNodeModel) => GroupNode.children.indexOf(nodechild.id) >= 0);
-    const groupchildrenNodeIds = groupchildrenNodes.map((nodechild: BaseNodeModel) => nodechild.id);
-    debugger;
-    // 建立父子关系,              
-    const groups = nodes.filter((node) => node.type === 'templateGroup');
-    for (let childnode of groupchildrenNodes) {
-        if (childnode.type === 'templateGroup') {
-            addrelation2Template({ GroupNode: childnode, data, templateStack, BasicNodeIds, topTemplate });
+    for (let edge of edges) {
+        debugger;
+        const { sourceNodeId, targetNodeId } = edge;
+        const sourceRelations: any[] = [];
+        getAncestorRelation(sourceNodeId, sourceRelations, groups);
+        const targetRelations: any[] = [];
+        getAncestorRelation(targetNodeId, targetRelations, groups);
+        if (sourceRelations[0] && sourceRelations[0] === targetRelations[0]) {
+            continue;
+        }
+        const sourceKey = getTaskKeyByNodeId(sourceNodeId, nodes);
+        const targetKey = getTaskKeyByNodeId(targetNodeId, nodes);
+        const relation: templateConnectTaskObjDefine = {
+            sourceId: sourceKey,
+            sourceRelations,
+            targetId: targetKey,
+            targetRelations,
+        };
+        if (sourceRelations.length > 0) {
+            let templateinstance1 = getTaskByKey(sourceRelations.at(-1));
+            templateinstance1.outputTaskKeys.push(relation);
+            const currentgroupNode = getNodeBykey(sourceRelations.at(-1), nodes) || nodes[0];
+            templateinstance1.x = currentgroupNode.x;
+            templateinstance1.y = currentgroupNode.y;
+            const {width,height}=currentgroupNode.properties
+            templateinstance1.width=width
+            templateinstance1.height=height
+            updateTaskByKey(sourceRelations.at(-1), templateinstance1);
         } else {
-            let edgeTargetNodes = edges.filter(
-                (edge) => groupchildrenNodeIds.indexOf(edge.sourceNodeId) < 0 && groupchildrenNodeIds.indexOf(edge.targetNodeId) > -1
-            );
-            let edgeSourceNodes = edges.filter(
-                (edge) => groupchildrenNodeIds.indexOf(edge.targetNodeId) < 0 && groupchildrenNodeIds.indexOf(edge.sourceNodeId) > -1
-            );
-            // 对该模板内部的节点连接写到template上
-            edgeSourceNodes.forEach((edgeSourceNode: BaseNodeModel) => {
-                const Relation: any[] = [];
-                const currentNode = nodes.find((node: BaseNodeModel) => node.id === edgeSourceNode.targetNodeId);
-                getAncestorRelation(currentNode, Relation, groups);
-                const relations = {
-                    sourceId: getTaskKeyByNode(childnode),
-                    sourceRelations: [...templateStack],
-                    targetId: getTaskKeyByNode(nodes.filter((node: BaseNodeModel) => node.id === edgeSourceNode.targetNodeId)[0]),
-                    targetRelation: Relation,
-                };
-                topTemplate.outputTaskKeys.push(relations);
-            });
-            edgeTargetNodes.forEach((edgeTargetNode: BaseNodeModel) => {
-                const Relation: any[] = [];
-                const currentNode = nodes.find((node: BaseNodeModel) => node.id === edgeTargetNode.sourceNodeId);
-                getAncestorRelation(currentNode, Relation, groups);
-                const relations = {
-                    sourceId: getTaskKeyByNode(nodes.filter((node: BaseNodeModel) => node.id === edgeTargetNode.sourceNodeId)[0]),
-                    sourceRelations: Relation,
-                    targetId: getTaskKeyByNode(childnode),
-                    targetRelation: [...templateStack],
-                };
-                topTemplate.inputTaskKeys.push(relations);
-            });
-            const templateKey = getTaskKeyByTemplate(topTemplate);
-            updateTaskByKey(templateKey, topTemplate);
-        }
-    }
-    templateStack.pop();
-}
-function addrelation2BasicTask(BasicNodes, data) {
-    // 初始化到tasklist
-    BasicNodes.forEach((node) => addTaskList({ [getTaskKeyByNode(node)]: node.properties }));
-    const BasicNodeIds = BasicNodes.map((node) => node.id);
-
-    const { nodes, edges } = data;
-    const allSourceNodeIds = edges.map((edge) => edge.sourceNodeId);
-    const allTargetNodeIds = edges.map((edge) => edge.targetNodeId);
-    const allBasicSourceNodes: BaseNodeModel[] = nodes.filter(
-        (node) => allSourceNodeIds.indexOf(node.id) > -1 && BasicNodeIds.indexOf(node.id) > -1
-    );
-    const allBasicTargetNodes: BaseNodeModel[] = nodes.filter(
-        (node) => allTargetNodeIds.indexOf(node.id) > -1 && BasicNodeIds.indexOf(node.id) > -1
-    );
-    const groups = nodes.filter((node) => node.type === 'templateGroup');
-    debugger;
-    for (let sourceNode of allBasicSourceNodes) {
-        let task = getTaskByKey(getTaskKeyByNode(sourceNode));
-        const targetNodes = getTargetNode(sourceNode, data);
-        targetNodes.forEach((targetNode: BaseNodeModel) => {
-            const Relation: any[] = [];
-            getAncestorRelation(targetNode, Relation, groups);
-            let relation = {
-                sourceId: getTaskKeyByNode(sourceNode),
-                sourceRelations: [],
-                targetId: getTaskKeyByNode(targetNode),
-                targetRelation: [...Relation],
-            };
-            task.x = sourceNode.x;
-            task.y = sourceNode.y;
+            let task = getTaskByKey(sourceKey);
             task.outputTaskKeys.push(relation);
-        });
-        updateTaskByKey(getTaskKeyByNode(sourceNode), task);
-    }
-    for (let targetNode of allBasicTargetNodes) {
-        let task = getTaskByKey(getTaskKeyByNode(targetNode));
-        const sourceNodes = getSourceNode(targetNode, data);
-        sourceNodes.forEach((sourceNode: BaseNodeModel) => {
-            const Relation: any[] = [];
-            getAncestorRelation(sourceNode, Relation, groups);
-            let relation = {
-                sourceId: getTaskKeyByNode(sourceNode),
-                sourceRelations: [...Relation],
-                targetId: getTaskKeyByNode(targetNode),
-                targetRelation: [],
-            };
-            task.x = targetNode.x;
-            task.y = targetNode.y;
+            updateTaskByKey(sourceKey, task);
+        }
+        if (targetRelations.length > 0) {
+            let templateinstance1 = getTaskByKey(targetRelations.at(-1));
+            templateinstance1.inputTaskKeys.push(relation);
+            const currentgroupNode = getNodeBykey(targetRelations.at(-1), nodes) || nodes[0];
+            templateinstance1.x = currentgroupNode.x;
+            templateinstance1.y = currentgroupNode.y;
+            const {width,height}=currentgroupNode.properties
+            templateinstance1.width=width
+            templateinstance1.height=height
+            updateTaskByKey(targetRelations.at(-1), templateinstance1);
+        } else {
+            let task = getTaskByKey(targetKey);
             task.inputTaskKeys.push(relation);
-        });
-        updateTaskByKey(getTaskKeyByNode(targetNode), task);
-    }
-}
-function getTargetNode(sourceNode: BaseNodeModel, data: { nodes: any; edges: any }) {
-    const { nodes, edges } = data;
-    const TargetNodeids: any[] = [];
-    for (let edge of edges) {
-        if (edge.sourceNodeId === sourceNode.id) {
-            TargetNodeids.push(edge.targetNodeId);
+            updateTaskByKey(targetKey, task);
         }
     }
-    return nodes.filter((node: { id: any }) => TargetNodeids.indexOf(node.id) > -1);
 }
-function getSourceNode(targetNode: { id: any }, data: { nodes: any; edges: any }) {
-    debugger;
-    const { nodes, edges } = data;
-    const sourceNodeids: any[] = [];
-    for (let edge of edges) {
-        if (edge.targetNodeId === targetNode.id) {
-            sourceNodeids.push(edge.sourceNodeId);
-        }
-    }
-    return nodes.filter((node: { id: any }) => sourceNodeids.indexOf(node.id) > -1);
-}
-function getAncestorRelation(currentNode: { id: any }, Relation: any[], groups: any[]) {
-    debugger;
-    const findNode = groups.find((group) => group.children.indexOf(currentNode.id) > -1);
+function getAncestorRelation(currentNodeId: string, Relation: any[], groups: any[]) {
+    const findNode = groups.find((group) => group.children.indexOf(currentNodeId) > -1);
     if (findNode) {
         Relation.push(getTaskKeyByNode(findNode));
-        getAncestorRelation(findNode, Relation, groups);
+        getAncestorRelation(findNode.id, Relation, groups);
     }
+}
+function getMemoChildren(data: { nodes: any; edges?: any; topTemplateId?: any; }) {
+    const memoChildren = [];
+    const { nodes } = data;
+
+    const { GroupNodes, BasicNodes } = separateAllNode(nodes);
+    const BasicNodeKeys = BasicNodes.map((node) => getTaskKeyByNode(node));
+    const GroupNodeKeys = GroupNodes.map((node) => getTaskKeyByNode(node));
+    // 初始化到tasklist
+    BasicNodes.forEach((node) => addTaskList({ [getTaskKeyByNode(node)]: { ...node.properties } }));
+    memoChildren.push(...BasicNodeKeys, ...GroupNodeKeys);
+    return memoChildren;
+}
+function getHandle(memoChildren: string[]) {
+    const handle = [];
+    for (let childKey of memoChildren) {
+        if (isTemplateGroup(childKey)) {
+            const templateInstance = getTaskByKey(childKey);
+            const template = getTaskByKey(templateInstance.id);
+            const targetArr: string[] = [];
+            templateInstance.inputTaskKeys.forEach((relation: templateConnectTaskObjDefine) => {
+                const { targetId } = relation;
+                targetArr.push(targetId);
+            });
+            for (let key of template.handle) {
+                if (targetArr.indexOf(key) == -1) {
+                    handle.push(key);
+                }
+            }
+        } else if (getTaskByKey(childKey).inputTaskKeys.length == 0) {
+            handle.push(childKey);
+        }
+    }
+    return handle;
+}
+function initialPositionfromHandle(handle: string[], nodes: any[], groups: any[]) {
+    const { GroupNodes, BasicNodes } = separateAllNode(nodes);
+    let initialX = 0,
+        initialY = 0;
+    for (const node of nodes) {
+        if (handle[0] === getTaskKeyByNode(node)) {
+            const Relations: any[] = [];
+            getAncestorRelation(node.id, Relations, groups);
+            if (Relations.length > 0) {
+                const top = Relations.at(-1);
+                const topGroup=getNodeBykey(top,nodes)
+                initialX = topGroup?.x||0;
+                initialY = topGroup?.y||0;
+            } else {
+                initialX = node.x;
+                initialY = node.y;
+            }
+            break;
+        }
+    }
+    BasicNodes.forEach((node) => {
+        updateTaskByKey(getTaskKeyByNode(node), { x: node.x - initialX, y: node.y - initialY });
+    });
+    GroupNodes.forEach((node) => {
+        updateTaskByKey(getTaskKeyByNode(node), { x: node.x - initialX, y: node.y - initialY });
+    });
 }

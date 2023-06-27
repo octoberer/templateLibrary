@@ -1,3 +1,5 @@
+// 自定义的发布订阅，用于不同组件的数据传递
+
 type listType = {
     [key: string]: any;
 };

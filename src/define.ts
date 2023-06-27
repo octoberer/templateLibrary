@@ -105,25 +105,24 @@ interface handleBindArgs {
 type templateId = string;
 type templateTaskInstanceKey = string;
 type basicTaskId = string;
-type processControlTaskId = string;
 
 type templateTaskId = templateId | templateTaskInstanceKey;
 type templateTaskKeyOrbasicTaskId = string;
-type allTaskKey = basicTaskId | processControlTaskId | templateTaskInstanceKey;
 export interface basicTaskDefine {
     id: string;
     instanceId: string;
     inputTaskKeys: templateConnectTaskObjDefine[];
     outputTaskKeys: templateConnectTaskObjDefine[];
-    x?: number;
-    y?: number;
     handleType: 'task';
     outputhandlArg: handleBindArgs;
     inputhandlArg: handleBindArgs;
     inputArgs: TaskBindArgs;
     outputArgs: TaskBindArgs;
     handle: string; //输入、参数作为handle的输入，输出会赋值给output所有的输入,如果是componentDefine的id，则调用对应处理器，如果是基础组件如add，则使用基础运算
+    x?: number;
+    y?: number;
 }
+
 //============模板相关
 interface EditHandlArgsdefine {
     [basicTaskDefineInstanceid: string]: handleArg;
@@ -136,14 +135,12 @@ export interface templateComponentArgDefine {
 export interface IdBind {
     [instanceId: string]: string;
 }
-interface templateInputArgs {
-    [taskId: string]: TaskBindArgs;
-}
+
 export interface templateConnectTaskObjDefine {
     sourceId: basicTaskId;
     sourceRelations: templateTaskId[];
     targetId: basicTaskId;
-    targetRelation: templateTaskId[];
+    targetRelations: templateTaskId[];
 }
 
 export interface templateDefine {
@@ -176,9 +173,10 @@ export interface processControlDefine {
 export interface processControlTaskDefine {
     id: string;
     instanceId: string;
-    parId: templateId;
     inputTaskKeys: templateConnectTaskObjDefine[];
     outputTaskKeys: templateConnectTaskObjDefine[];
     inputArgs: TaskBindArgs;
     outputArgs: TaskBindArgs;
+    x?: number;
+    y?: number;
 }

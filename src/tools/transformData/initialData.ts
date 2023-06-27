@@ -1,3 +1,5 @@
+// 用于调式的数据
+
 export const initialallTemplatedata = [
   // {
   //     id: 1000,

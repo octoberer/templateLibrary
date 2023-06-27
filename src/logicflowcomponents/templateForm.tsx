@@ -2,9 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Button, Form, Input, Select } from 'antd';
 import TextArea from 'antd/es/input/TextArea';
 
-
-const TemplateForm: React.FC = (props) => {
-    const {getMessage}=props
+const TemplateForm = (props: { getMessage: ({briefName, doc}:{briefName: string, doc: string}) => void }) => {
+    const { getMessage } = props;
     const [templateMessage, setTemplateMessage] = useState({ briefName: '', doc: '' });
     useEffect(() => {
         getMessage(templateMessage);

@@ -2,6 +2,8 @@ import ReactDOM from 'react-dom/client';
 import { HtmlResize } from '@logicflow/extension';
 import TaskUI from '../innerComponents/TaskUI';
 import FinishedTaskUI from '../innerComponents/FinishedTaskUI';
+import { addandGetTaskinstanceId } from '../tools/initialData';
+import { BaseNodeModel } from '@logicflow/core';
 export default function getregisterTaskobj(lf: LogicFlow) {
     class ResizeTaskModel extends HtmlResize.model {
         constructor(data: any, graphModel: any) {
@@ -25,21 +27,22 @@ export default function getregisterTaskobj(lf: LogicFlow) {
                 {
                     text: '复制',
                     className: 'lf-menu-item',
-                    callback(node) {
-                        lf.cloneNode(node.id);
+                    callback(node: BaseNodeModel) {
+                        debugger;
+                        let a = lf.cloneNode(node.id);
+                        lf.setProperties(a.id, { ...a.properties, instanceId: addandGetTaskinstanceId(a.properties.id) });
                     },
                 },
             ];
         }
         initNodeData(data: any) {
             super.initNodeData(data);
-            if(this.properties.handle){
+            if (this.properties.handle) {
                 this.width = 400;
                 this.height = 250;
-            }
-            else{
+            } else {
                 this.width = 400;
-                this.height = 320
+                this.height = 320;
             }
             this.text.draggable = false;
             this.text.editable = false;
@@ -62,12 +65,11 @@ export default function getregisterTaskobj(lf: LogicFlow) {
                 const properties = this.props.model.getProperties();
                 this.isMounted = true;
                 const root = ReactDOM.createRoot(rootEl);
-                if(properties.handle){
+                if (properties.handle) {
                     // root.render(<div style={{background:'green',height:'inherit'}}> 一个盒子</div>)
-                    root.render(<FinishedTaskUI properties={properties}> </FinishedTaskUI>)
-                }
-                else{
-                    root.render(<TaskUI  loginflowInstance={lf} />);
+                    root.render(<FinishedTaskUI properties={properties}> </FinishedTaskUI>);
+                } else {
+                    root.render(<TaskUI loginflowInstance={lf} />);
                 }
             }
         }
